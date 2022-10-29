@@ -1,0 +1,54 @@
+# History files
+.Rhistory
+.Rapp.history
+
+# Session Data files
+.RData
+*.swp
+
+# Example code in package build process
+*-Ex.R
+
+# Output files from R CMD build
+/*.tar.gz
+
+# Output files from R CMD check
+/*.Rcheck/
+
+# RStudio files
+.Rproj.user/
+*.Rproj
+
+# produced vignettes
+pkg/vignettes/*.html
+pkg/vignettes/*.pdf
+
+# OAuth2 token, see https://github.com/hadley/httr/releases/tag/v0.3
+.httr-oauth
+
+# knitr and R markdown default cache directories
+/*_cache/
+/cache/
+
+# Temporary files created by R markdown
+*.utf8.md
+*.knit.md
+.Rproj.user
+
+# Files created by roxygen
+pkg/man/*
+
+# paper.pdf
+paper/*.pdf
+
+# other files I frequently generate
+manual.pdf
+README.html
+*.csv
+*.toc
+*.aux
+*.log
+*.out
+*.tex
+
+

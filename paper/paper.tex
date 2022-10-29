@@ -1,0 +1,53 @@
+\documentclass[11pt, fleqn]{article}
+\usepackage[english]{babel}
+\usepackage{amsmath}
+
+\usepackage[linesnumbered]{algorithm2e}
+
+
+\usepackage{natbib}
+\setlength{\parskip}{\baselineskip}%
+\setlength{\parindent}{0pt}%
+
+\title{Spit-Apply-Combine with Collapsing Groups}
+\author{Mark P.J. van der Loo}
+
+
+\begin{document}
+\maketitle
+
+Let $U$ be a finite population, and let $A$ be a finite set with $|A|\leq |U|$.
+Any function 
+\begin{equation}
+f: U\to A,
+\end{equation}
+defines a partition on $U$, in the sense that two elements are equivalent if they
+map to the same element of $A$. In the rest of the discussion it will be useful to 
+also define the formal inverse $f^{-1}:A\to 2^U$, such that $f^{-1}(a)$ is the set of 
+elements in $U$ that maps to $a$. In notation:
+\begin{equation}
+f^{-1}(a) \equiv \{u\in U: f(u)=a\}.
+\end{equation}
+
+\begin{algorithm}[H]
+\SetKwInOut{Input}{Input}\SetKwInOut{Output}{Output}
+\Input{$U$, $\phi: 2^U\to X$, a partition $(f,A)$}
+\Output{The value of $\phi$ for every part of $U$ induced by $(f,A)$, represented
+       as a set pairs $(a,x)\in A\times X$. }
+
+$R = \{\}$\;
+\While{$U\not=\{\}$}{
+Choose any $u\in U$\;
+$d = (f^{-1}\circ f) (u)$\;
+$U = U - d$\;
+$ R= R\cup (f(u), \phi(d)$)\;
+}
+
+\end{algorithm}
+
+
+\bibliographystyle{plainnat}
+\bibliography{vanderloo}
+\end{document}
+
+
