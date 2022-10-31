@@ -11,7 +11,7 @@ out <- collapse(data = d
   , md = median(Y,na.rm=TRUE) )
 
 expect_equal(out[,1],c("11","12"))
-expect_equal(out[,2],c("11","1"))
+expect_equal(out[,2],c(0,1))
 expect_equal(out[,3],c(6,6))
 expect_equal(out[,4],c(6,6))
 

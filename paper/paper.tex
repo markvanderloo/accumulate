@@ -120,7 +120,7 @@ that are to be used for grouping. So the function $f\to A$ is implemented by
 forcing the user to make sure that the position of each label in \texttt{by}
 corresponds to the row number in the data frame \texttt{x}. The argument
 \texttt{FUN} is the function that aggregates each subset of \texttt{x}.  Here is
-an example of how a user might use this function on the R prompt.
+an example of how a user might call this function from the R prompt.
 %
 \begin{verbatim}
 > aggregate(iris["Sepal.Length"], by=iris["Species"], FUN=mean)
@@ -131,7 +131,9 @@ an example of how a user might use this function on the R prompt.
 \end{verbatim}
 %
 Note that the correspondence in position of the \texttt{Species} label and the
-record position is implemented by taking them from the same data frame.
+record position is implemented by taking them from the same data frame. The output
+also reveals in the first column the set $A$: each row corresponds to a unique
+value in \texttt{Species} column.
 
 
 \subsection{Split-apply-combine with collapsing groups}
@@ -195,7 +197,9 @@ $R = \{\}$\;
 
 \section{The \texttt{rcollapse} package}
 
-
+\begin{itemize}
+\item{Specification of collapsing sequence with multiple collapsing variables (e.g. first size class, then NACE code)}
+\end{itemize}
 
 \bibliographystyle{plainnat}
 \bibliography{vanderloo}

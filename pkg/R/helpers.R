@@ -147,3 +147,28 @@ fraction_complete <- function(...){
 }
 
 
+#' Derive collapsing scheme from hierarchical classification
+#'
+#' Derive a collapsing scheme where group labels collapse to their
+#' parents in the hierarchy.
+#'
+#' @param x \code{[character|integer]} labels in a hierarchical classification (lowest level)
+#' @param pad \code{[character]} padding character used for codes shorter than the maximum length.
+#'
+#' 
+#' @export
+csh_from_digits <- function(x,pad="0"){
+  x <- as.character(x)
+  nlevels <- max(nchar(x))
+
+  A <- matrix(NA_character_,nrow=length(x), ncol=nlevels)
+  for ( i in seq_len(nlevels)){
+    A[,i] <- substr(x,1,nlevels+1-i)
+  }
+  rownames(A) <- x
+  colnames(A) <- sprintf("A%d",seq_len(nlevels)-1)
+  A
+}
+
+
+

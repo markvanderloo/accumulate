@@ -19,9 +19,13 @@
 #'
 #' @return
 #' A data frame with \code{nrow(collapse)} rows. The first column equals the first column
-#' of collapse and indicates the group for which an aggregate was computed. 
-#' The second column indicates the group used to compute the aggregate. The subsequent
+#' of \code{collapse} and indicates the group for which an aggregate was computed. 
+#' The second column indicates the number of collapses that took place. The subsequent
 #' columns contain the results of the expressins listed in the \code{...} argument.
+#' If no amount of collapsing yields a data set that passes the test, then for that
+#' row, the second and all subsequent columns are \code{NA}.
+#' 
+#'
 #'
 #' @examples
 #' # some example data
@@ -48,7 +52,7 @@ collapse <- function(data, collapse, test, ...){
 
   # set up output set
   out <- data.frame(collapse[,1], NA, row.names=collapse[,1])
-  colnames(out) <- c(names(collapse)[1], "input")
+  colnames(out) <- c(names(collapse)[1], "collapse_level")
   vals <- as.data.frame(matrix(NA, nrow=nrow(collapse), ncol=length(exprs)))
   colnames(vals) <- names(exprs)
   out <- cbind(out, vals)
@@ -65,7 +69,8 @@ collapse <- function(data, collapse, test, ...){
       grps <- collapse[collapse[,j] == collapse[a, j],1]
       d <- data[data[,g] %in% grps, ]
     }
-    out[a,2] <- collapse[a,j]
+    if (!test(d)) next
+    out[a,2] <- j-1
     out[a,3:ncol(out)] <- lapply(exprs, function(e) with(d, eval(e)))
   }
   rownames(out) <- NULL
