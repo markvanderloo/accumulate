@@ -1,8 +1,8 @@
 \documentclass[11pt, fleqn]{article}
 \usepackage[english]{babel}
-\usepackage{amsmath}
+\usepackage{amsmath, amssymb}
 
-\usepackage[linesnumbered]{algorithm2e}
+\usepackage[ruled, linesnumbered]{algorithm2e}
 
 
 \usepackage{natbib}
@@ -11,39 +11,190 @@
 
 \title{Spit-Apply-Combine with Collapsing Groups}
 \author{Mark P.J. van der Loo}
-
+\date{CONCEPT \today{}}
 
 \begin{document}
 \maketitle
 
-Let $U$ be a finite population, and let $A$ be a finite set with $|A|\leq |U|$.
-Any function 
-\begin{equation}
-f: U\to A,
-\end{equation}
-defines a partition on $U$, in the sense that two elements are equivalent if they
-map to the same element of $A$. In the rest of the discussion it will be useful to 
-also define the formal inverse $f^{-1}:A\to 2^U$, such that $f^{-1}(a)$ is the set of 
-elements in $U$ that maps to $a$. In notation:
-\begin{equation}
-f^{-1}(a) \equiv \{u\in U: f(u)=a\}.
-\end{equation}
+\section{Introduction}
+The operation of splitting a data set into non-overlapping groups, computing an
+aggregate for each group, and combining the results into a new datasets is one
+of the most common operations in data analyses. The idea behind this so-called
+split-apply-combine approach is that the calculation for each groups only uses
+data available within the group. However, in some cases the quality of data in
+a group may be insufficient for producing a reliable group aggregate. Common
+quality issues include insufficient records, or too many records with values
+for certain variables missing. In such cases it is not uncommon to use data
+from outside the target group  to estimate the group aggregate. One example is
+Small Area Estimation, where the lack of observations in one group is
+compensated by using data from similar but other groups. Another area where
+such approaches occur is group-wise imputation. For example, one may wish to
+impute a group estimate (say, mean, or median) for missing values. If there are
+too little observations to provide an accurate estimate of the group mean, the
+group may be expanded, trading bias for variance.
+
+One approach that frequently occurs in practice is to use a so-called
+collapsing scheme. In this approach one attempts to estimate the aggregate for
+the most fine-grained grouping first.  If this is not possible, two or more
+groups are combined to provide input for estimating a value for the
+fine-grained group. The collapsing scheme defines which groups may be combined,
+and it may consist of multiple levels of collapsing; in principle to the point
+where the whole data set is used to estimate an aggregate value for a single
+group.
+
+Collapsing schemes can be the result of an optimisation, but they frequently
+result from subject matter as well. For example, in the case of hierarchical
+classifications, there is a natural ordering of groups that are similar from a
+subject matter point of view (whether that means that they can be considered
+representative for each other is another, statistical, question).  Examples
+include the NACE classification of economic activities or the ISCO
+classification of professions. Both have a tree-like structure that can be used
+to combine groups with a common ancestor in the hierarchy.
+
+In this paper we formalise the concept of `collapsing scheme', and give an
+algorithm for split-apply-combine operations based on it. Next, we demonstrate
+the R package \texttt{rcollapse} that implements this algorithm together with
+some utility functions that make working with collapsing schemes easier.
+
+
+
+\section{Formal descriptions and algorithms}
+In this section we give a formal description of the algorithms. In order to be
+unambiguous and to represent the algorithms compactly, we introduce some
+notation. The notation also makes the pseudocode independent of the
+implementation language used, or how the data is represented. 
+
+We start by giving the algorithm for ordinary split-apply-combine, so it is
+easy to see where the algorithm must be generalized to allow for a collapsing
+scheme.
+
+
+\subsection{Split-apply-combine}
+In order to analyse a data set group by group we need to specify a data set, a
+way to split it into groups, and a function that takes a subset of data and
+returns an aggregate. Let us introduce some notation for that.
+
+Let $U$ be a finite set, and let $\phi$ be a function that accepts a subset of
+$U$ and returns a single value in some domain $X$. Here, $U$ is our data set
+and $\phi$ an aggregating function. We split $U$ into groups using the
+following notation. Let $A$ be finite set that has no more elements than $U$,
+and let $f$ be a function that takes an element of $U$ and returns a value in
+$A$. We can think of $A$ as a set of group labels, and $f$ as the function that
+assigns a label to each element of $U$. This way, $f$ divides $U$ into
+non-overlapping groups, since every element in $U$ can only get one label (that
+is just how mathematical functions work). In formal terminology we say that
+$f:U\to A$ is a \emph{partition} of $U$.
+
+In this notation, any split-apply-combine operation can be computed with the following
+algorithm.
 
 \begin{algorithm}[H]
+\caption{Split-Apply-Combine}
 \SetKwInOut{Input}{Input}\SetKwInOut{Output}{Output}
-\Input{$U$, $\phi: 2^U\to X$, a partition $(f,A)$}
-\Output{The value of $\phi$ for every part of $U$ induced by $(f,A)$, represented
-       as a set pairs $(a,x)\in A\times X$. }
+\Input{A finite set $U$, an aggregator $\phi: 2^U\to X$, and a partition $f:U\to A$}
+\Output{$R$: the value of $\phi$ for every part of $U$ as a set pairs $(a,x)\in
+A\times X$ }
 
 $R = \{\}$\;
-\While{$U\not=\{\}$}{
-Choose any $u\in U$\;
-$d = (f^{-1}\circ f) (u)$\;
-$U = U - d$\;
-$ R= R\cup (f(u), \phi(d)$)\;
+\For{$a\in A$}{
+  $d=f^{-1}(\{a\})$\tcp*{get subset of $U$}
+  $R = R\cup \{(a,\phi(a))\}$\tcp*{aggregate and add to result}
+}
+\end{algorithm}
+Here, the output is collected in a set $R$. We also introduced some new
+notation: the notation $2^U$ stands for `the set of all subsets of $U$'. The
+notation $f^{-1}$ stands for the formal \emph{inverse} of $f$. That is: you
+give it a set of labels from $A$ and it returns all the elements of $U$ that
+have any of those labels. This definition is slightly too general for the
+current algorithm, but it will come in handy when we move to collapsing groups.
+
+Let us see how the elements $U$, $f\to A$ and $\phi$ are implemented
+in practice. Consider the signature of the R \texttt{aggregate} function for data
+frames (we skip arguments that are not important for the discussion).
+\begin{verbatim}
+  aggregate(x, by, FUN)
+\end{verbatim}
+Here, \texttt{x} is a data frame where each column is a variable to be
+aggregated.  The argument \texttt{by} represents the label(s) for each record
+that are to be used for grouping. So the function $f\to A$ is implemented by
+forcing the user to make sure that the position of each label in \texttt{by}
+corresponds to the row number in the data frame \texttt{x}. The argument
+\texttt{FUN} is the function that aggregates each subset of \texttt{x}.  Here is
+an example of how a user might use this function on the R prompt.
+%
+\begin{verbatim}
+> aggregate(iris["Sepal.Length"], by=iris["Species"], FUN=mean)
+     Species Sepal.Length
+1     setosa        5.006
+2 versicolor        5.936
+3  virginica        6.588
+\end{verbatim}
+%
+Note that the correspondence in position of the \texttt{Species} label and the
+record position is implemented by taking them from the same data frame.
+
+
+\subsection{Split-apply-combine with collapsing groups}
+
+
+\begin{equation}
+U\xrightarrow{f_0}A_0\xrightarrow{f_1}\cdots\xrightarrow{f_n}A_n
+\label{eq:collapsingsequence}
+\end{equation}
+
+We also generalize the labeling function $f$ of the previous section
+to the function $F_k:A_0\to A_k$, which accepts a label in $A_0$ and 
+returns the corresponding label in $A_k$. This can formally be defined 
+as consecutive application of $f_1, f_2\cdots, f_k$ to an element of 
+$A_0$. In notation
+\begin{equation*}
+F_k \equiv f_k\circ f_{k-1}\circ\cdots\circ f_1.
+\end{equation*}
+Similarly we define $F^{-1}_k:2^{A_k}\to 2^{A_0}$ as the composition
+\begin{equation*}
+F_k^{-1} \equiv f_1^{-1}\circ f_2^{-1}\circ\cdots\circ f_k^{-1}.
+\end{equation*}
+This function asks for a set of labels in $A_k$ and returns all the records in
+$U$ that are mapped to that label via the collapsing sequence of
+Equation~\eqref{eq:collapsingsequence}. 
+
+
+
+
+
+
+\begin{algorithm}[H]
+\caption{Split-Apply-Combine with Collapsing Groups}
+\SetKwInOut{Input}{Input}\SetKwInOut{Output}{Output}
+\Input{A finite set $U$, an aggregator $\phi: 2^U\to X$, a test function $\beta: 2^U\to \mathbb{B}$,
+      and a collapsing sequence $U\xrightarrow{f_0}A_0\cdots \xrightarrow{f_n}  A_n$}
+
+\Output{$R$: the value of $\phi$ for every part of $U$, for which a suitable
+collapsing group can be found, as a set of triples $(a,k,x)\in A_0\times
+A_k\times X $ with $0\leq k\leq n$.}
+
+$R = \{\}$\;
+\For{$a\in A_0$}{
+  $i=0$\;
+  $d = f_0^{-1}(\{a\})$\tcp*{get subset of $U$}
+  \While{$i<n \land \lnot\beta(d)$}{
+    $i = i+1$ \tcp*{Increase collapse level} 
+    $d = (f_0^{-1}\circ F_i^{-1}\circ F_i)(a)$ \tcp*{Collapse and get subset}
+  }
+  \If{$\beta(d)$}{
+    $R = R\cup \{(a, i,\phi(d))\}$\;
+  }
 }
 
 \end{algorithm}
+
+\subsection{Caveat: unbalanced hierarchical classifications}
+\begin{itemize}
+\item tree with different levels of details
+\end{itemize}
+
+\section{The \texttt{rcollapse} package}
+
 
 
 \bibliographystyle{plainnat}
