@@ -90,6 +90,7 @@ algorithm.
 
 \begin{algorithm}[H]
 \caption{Split-Apply-Combine}
+\label{alg:sac}
 \SetKwInOut{Input}{Input}\SetKwInOut{Output}{Output}
 \Input{A finite set $U$, an aggregator $\phi: 2^U\to X$, and a partition $f:U\to A$}
 \Output{$R$: the value of $\phi$ for every part of $U$ as a set pairs $(a,x)\in
@@ -137,15 +138,72 @@ value in \texttt{Species} column.
 
 
 \subsection{Split-apply-combine with collapsing groups}
-
-
+The goal of the algorithm is to compute a value for each 
+subset of a dataset, possibly using values from a larger
+subset. The input of the algorithm consists again of a
+finite set $U$, and aggregation function $\phi$ that takes
+a subset of $U$ and returns a value in some domain $X$.
+Compared to Algorithm~\ref{alg:sac} we need two extra
+inputs. First, we need a user-defined function that checks whether
+a given subset $d$ of $U$ is suitable for computing $\phi(d)$.
+We will call this function $\beta: 2^U\to \mathbb{B}$, where
+$\mathbb{B}=\{\texttt{True},\texttt{False}\}$. 
+Typical tests are checking whether there are sufficient records
+available, or whether certain variables have a low enough fraction
+of missing values. Second, we need
+a \emph{collapsing scheme}
 \begin{equation}
-U\xrightarrow{f_0}A_0\xrightarrow{f_1}\cdots\xrightarrow{f_n}A_n
+U\xrightarrow{f_0}A_0\xrightarrow{f_1}A_1\xrightarrow{f_2}\cdots\xrightarrow{f_n}A_n.
 \label{eq:collapsingsequence}
 \end{equation}
+A collapsing scheme is a sequence of partitions where each $f_i:A_{i-1}\to A_i$
+partitions $A_{i-1}$ into $|A_i|$ groups. 
 
-We also generalize the labeling function $f$ of the previous section
-to the function $F_k:A_0\to A_k$, which accepts a label in $A_0$ and 
+Collapsing schemes can be represented as tables. For example, the European NACE
+classification is a hierarchical classification of economic activity. Each
+group is encoded as a 4-digit code where the first digit indicates the highest
+grouping level, and the last digit the most detailed level. This induces a
+collapsing sequence by combining groups that have the same parent in the
+hierarchy. Below is an example, based on a small piece of the NACE code list.
+%
+\begin{center}
+\begin{tabular}{rrr}
+\hline
+ $A_0$& $A_1$ & $A_2$\\
+\hline
+0111&   011 & 01\\
+0112&   011 & 01\\
+0113&   011 & 01\\
+0121&   012 & 01\\
+0122&   012 & 01\\
+0123&   012 & 01\\
+0124&   012 & 01\\
+\hline
+\end{tabular}
+\end{center}
+Here, $A_0$ is the most detailed partition, splitting a dataset into seven
+groups, relating to $\{0111,\ldots,0124\}$. In $A_1$ there are two groups.
+The first, labeled $01.1$ is constructed by combining $0111, 0112$ and
+$0113$ and the second, labeled $01.2$ is constructed by combining
+$0121,\ldots 01.24$. Finally, in $A_2$ all groups are combined.
+
+To compute an aggregate for records labeled with $0111$, the algorithm will
+select those records and test whether the subset is suitable. If not, it will
+move to $f_1(0111)=011$ and find all the groups in $A_0$ that map to 011 as
+follows.
+\begin{displaymath}
+f_1^{-1}(\{011\}) = \{0111, 0112, 0113\}.
+\end{displaymath}
+It will then move on and find all records labeled with any of those three
+group labels, and test again. If this new data set is suitable, the result is
+computed, if not, another collapse takes place. The whole procedure is repeated 
+for each element in $A_0$.
+
+
+
+
+To generalize this algorithm to generic collapsing schemes, we introduce
+the function $F_k:A_0\to A_k$, which accepts a label in $A_0$ and 
 returns the corresponding label in $A_k$. This can formally be defined 
 as consecutive application of $f_1, f_2\cdots, f_k$ to an element of 
 $A_0$. In notation
@@ -156,17 +214,15 @@ Similarly we define $F^{-1}_k:2^{A_k}\to 2^{A_0}$ as the composition
 \begin{equation*}
 F_k^{-1} \equiv f_1^{-1}\circ f_2^{-1}\circ\cdots\circ f_k^{-1}.
 \end{equation*}
-This function asks for a set of labels in $A_k$ and returns all the records in
-$U$ that are mapped to that label via the collapsing sequence of
-Equation~\eqref{eq:collapsingsequence}. 
+This function asks for a set of labels in $A_k$ and returns all the labels in
+$A_0$ that are mapped to that label via the collapsing sequence of
+Equation~\eqref{eq:collapsingsequence}.  We are now ready to formally
+write down our main Algorithm~\ref{alg:saccg}.
 
-
-
-
-
-
+%
 \begin{algorithm}[H]
 \caption{Split-Apply-Combine with Collapsing Groups}
+\label{alg:saccg}
 \SetKwInOut{Input}{Input}\SetKwInOut{Output}{Output}
 \Input{A finite set $U$, an aggregator $\phi: 2^U\to X$, a test function $\beta: 2^U\to \mathbb{B}$,
       and a collapsing sequence $U\xrightarrow{f_0}A_0\cdots \xrightarrow{f_n}  A_n$}
@@ -183,12 +239,23 @@ $R = \{\}$\;
     $i = i+1$ \tcp*{Increase collapse level} 
     $d = (f_0^{-1}\circ F_i^{-1}\circ F_i)(a)$ \tcp*{Collapse and get subset}
   }
-  \If{$\beta(d)$}{
+  \If{$\beta(d)$}{ \label{line:cond}
     $R = R\cup \{(a, i,\phi(d))\}$\;
-  }
+  } 
 }
 
 \end{algorithm}
+%
+Since the used level of collapsing is determined dynamically by data
+circumstances in $U$, the algorithm also reports the collapsing level used to
+compute a value foe each member of $A_0$. For each member of $A_0$ there is a
+triple $(a,i,\phi(d))$, where $a\in A_0$ is the label to which the value
+$\phi(d)$ pertains, and $i$ is the number of collapses applied to reach a
+suitable dataset. The condition in Line~\ref{line:cond} ensures that if
+no suitable dataset is found after the whole collapsing sequence has been
+executed, then no answer is returned.
+
+
 
 \subsection{Caveat: unbalanced hierarchical classifications}
 \begin{itemize}
