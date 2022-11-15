@@ -33,6 +33,10 @@ impute a group estimate (say, mean, or median) for missing values. If there are
 too little observations to provide an accurate estimate of the group mean, the
 group may be expanded, trading bias for variance.
 
+\begin{itemize}
+\item Add SDC collapsing as application
+\end{itemize}
+
 One approach that frequently occurs in practice is to use a so-called
 collapsing scheme. In this approach one attempts to estimate the aggregate for
 the most fine-grained grouping first.  If this is not possible, two or more
@@ -239,7 +243,7 @@ $R = \{\}$\;
     $i = i+1$ \tcp*{Increase collapse level} 
     $d = (f_0^{-1}\circ F_i^{-1}\circ F_i)(a)$ \tcp*{Collapse and get subset}
   }
-  \If{$\beta(d)$}{ \label{line:cond}
+  \If{$i<n \lor \beta(d)$}{ \label{line:cond}
     $R = R\cup \{(a, i,\phi(d))\}$\;
   } 
 }
