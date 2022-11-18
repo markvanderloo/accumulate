@@ -15,4 +15,24 @@ expect_equal(out[,2],c(0,1))
 expect_equal(out[,3],c(6,6))
 expect_equal(out[,4],c(6,6))
 
+input <- data.frame(
+    A  = c(1,1,1,2,2,2,3,3,3)
+  , B  = c(11,11,11,12,12,13,21,22,12)
+  , B1 = c(1,1,1,1,1,1,2,2,1)
+  , Y  = 2^(0:8)
+)
+
+output <- data.frame(
+    A = c(1,2,2,3,3,3)
+  , B = c(11,12,13,21,22,12)
+  , level = c(0,1,1,2,2,2)
+  , tY    = c(7,56,56,448,448,448)
+)
+
+out <- collapse(data=input
+        , collapse=A*B ~ A*B1 + A
+        , test=function(d) nrow(d)>=3
+        , tY = sum(Y) )
+
+expect_equivalent(out, output)
 

@@ -2,6 +2,8 @@
 \usepackage[english]{babel}
 \usepackage{amsmath, amssymb}
 
+\usepackage{colortbl, xcolor}
+
 \usepackage[ruled, linesnumbered]{algorithm2e}
 
 
@@ -103,7 +105,7 @@ A\times X$ }
 $R = \{\}$\;
 \For{$a\in A$}{
   $d=f^{-1}(\{a\})$\tcp*{get subset of $U$}
-  $R = R\cup \{(a,\phi(a))\}$\tcp*{aggregate and add to result}
+  $R = R\cup \{(a,\phi(d))\}$\tcp*{aggregate and add to result}
 }
 \end{algorithm}
 Here, the output is collected in a set $R$. We also introduced some new
@@ -142,6 +144,7 @@ value in \texttt{Species} column.
 
 
 \subsection{Split-apply-combine with collapsing groups}
+\label{sect:saccg}
 The goal of the algorithm is to compute a value for each 
 subset of a dataset, possibly using values from a larger
 subset. The input of the algorithm consists again of a
@@ -209,7 +212,7 @@ for each element in $A_0$.
 To generalize this algorithm to generic collapsing schemes, we introduce
 the function $F_k:A_0\to A_k$, which accepts a label in $A_0$ and 
 returns the corresponding label in $A_k$. This can formally be defined 
-as consecutive application of $f_1, f_2\cdots, f_k$ to an element of 
+as consecutive application of $f_1, f_2,\cdots, f_k$ to an element of 
 $A_0$. In notation
 \begin{equation*}
 F_k \equiv f_k\circ f_{k-1}\circ\cdots\circ f_1.
@@ -233,7 +236,7 @@ write down our main Algorithm~\ref{alg:saccg}.
 
 \Output{$R$: the value of $\phi$ for every part of $U$, for which a suitable
 collapsing group can be found, as a set of triples $(a,k,x)\in A_0\times
-A_k\times X $ with $0\leq k\leq n$.}
+\underline{n}\times X $ where $\underline{n}=\{0,1,\ldots,n\}$.}
 
 $R = \{\}$\;
 \For{$a\in A_0$}{
@@ -255,8 +258,8 @@ circumstances in $U$, the algorithm also reports the collapsing level used to
 compute a value foe each member of $A_0$. For each member of $A_0$ there is a
 triple $(a,i,\phi(d))$, where $a\in A_0$ is the label to which the value
 $\phi(d)$ pertains, and $i$ is the number of collapses applied to reach a
-suitable dataset. The condition in Line~\ref{line:cond} ensures that if
-no suitable dataset is found after the whole collapsing sequence has been
+suitable dataset. The condition in Line~\ref{line:cond} ensures that if no
+suitable dataset is found after the whole collapsing sequence has been
 executed, then no answer is returned.
 
 
@@ -267,11 +270,153 @@ executed, then no answer is returned.
 \end{itemize}
 
 \section{The \texttt{rcollapse} package}
+Grouped aggregation with a fall-though scenario based on a collapsing scheme
+requires a lot of parameters to be specified by the user. Besides the data, one
+needs to specify the method(s) of aggregation, the collapsing scheme, and the
+condition to decide whether a subset is fit for aggregation or a next collapse
+is necessary. The main function of the package is caled \texttt{collapse}
+and has the following signature.
+\begin{verbatim}
+  collapse(data, collapse, test, ...)
+\end{verbatim}
+where \texttt{data} is a data frame, \texttt{collapse} represents the collapse
+sequence, \texttt{test} is a function that accepts a subset of \texttt{data}
+and returns \texttt{TRUE} or \texttt{FALSE} and the ellepsis is a sequence
+of \texttt{label = expression} pairs that represent aggregation
+functions, in a similar style as \texttt{dplyr::summarize}. The output
+is a data frame that can schematically be represented as follows.
+\begin{verbatim}
+  [Grouping Variables, Collapse level, Output aggregates]
+\end{verbatim}
+The first columns represent the variables that define the output grouping, the
+next column is an integer that indicates the level of collapsing used to
+compute the aggregate, and the last set of columns store the aggregates.
+
+To accommodate the different use cases, the \texttt{rcollapse} package supports
+two different interfaces for specifying collapse sequences.  The first and most
+general is the formula interface, that requires that the collapsing sequence is
+represented as variables in the data set to be aggregated. The second is the
+tabular interface discussed before. This only supports a single grouping
+variable. For hierarchical classifications there is a helper function to
+translate parent-child representations of such classifications into a
+collapsing sequence.
+
+Besides complicated collapsing schemes, users must have the ability to specify
+a possibly complex condition for determining when a dataset is suitable for
+aggregation or not. The package offers some convenience functions that support common
+use cases as well as support for specifying generic conditions.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{The formula interface}
+It is not uncommon for users to use multiple variables for defining collapsing
+schemes. For example when grouping by two categorical variables \texttt{A} and
+\texttt{B}, one may first want to collapse variable $\texttt{B}$ into a
+variable \texttt{B1} and if that is not sufficient, in the next step grouping
+in the second variable is dropped so grouping is only defined by \texttt{A}.
+In \texttt{rcollapse} such a scheme is denoted with the formula \texttt{A*B \~{}
+A*B1 + A}. Here, the left-hand-side denotes the desired output grouping level
+that is attempted first, and the right-hand-side denotes consecutive collapse
+levels separated by \texttt{+}.
+
+The following tables illustrate the idea. The left table represents the data
+set to be aggregated by \texttt{A} and \texttt{B}. In this example we wish to
+compute the sum $t_Y$ of column $Y$ per group. We demand that there are at
+least three records in a group, otherwise we collapse one step.
+%
+\begin{center}
+\begin{tabular}{cccl}
+\multicolumn{4}{l}{\texttt{Input data}}\\
+\hline
+\texttt{A} & \texttt{B} & \texttt{B1} & $Y$\\
+\hline
+\cellcolor{red!25}   1 &\cellcolor{red!25}   11 &                1       & \cellcolor{red!25}   1   \\
+\cellcolor{red!25}   1 &\cellcolor{red!25}   11 &                1       & \cellcolor{red!25}   2   \\
+\cellcolor{red!25}   1 &\cellcolor{red!25}   11 &                1       & \cellcolor{red!25}   4   \\
+\cellcolor{green!25} 2 &                     12 & \cellcolor{green!25} 1 & \cellcolor{green!25} 8   \\
+\cellcolor{green!25} 2 &                     12 & \cellcolor{green!25} 1 & \cellcolor{green!25} 16  \\
+\cellcolor{green!25} 2 &                     13 & \cellcolor{green!25} 1 & \cellcolor{green!25} 32  \\
+\cellcolor{blue!25}  3 &                     21 &                2       & \cellcolor{blue!25}  64  \\
+\cellcolor{blue!25}  3 &                     22 &                2       & \cellcolor{blue!25}  128 \\
+\cellcolor{blue!25}  3 &                     12 &                1       & \cellcolor{blue!25}  256 \\
+\hline
+\end{tabular}\hspace{1cm}\begin{tabular}{ccl}
+\multicolumn{3}{l}{\texttt{Output}}\\
+\hline
+\texttt{A*B} & \texttt{level} & $t_Y$\\
+\hline
+\rowcolor{red!25}   1 11        & 0             & 7  \\
+\rowcolor{green!25} 2 12        & 1             & 56 \\
+\rowcolor{green!25} 2 13        & 1             & 56 \\
+\rowcolor{blue!25}  3 21        & 2             & 448\\
+\rowcolor{blue!25}  3 22        & 2             & 448\\
+\rowcolor{blue!25}  3 12        & 2             & 448\\
+\hline
+\end{tabular}
+\end{center}
+%
+The table on the right represents the output. Colors indicate which data was
+used. The First row in the output represents group
+$(\texttt{A}=1,\texttt{B}=11)$. The collapsing level is zero, which means
+that no collapsing was necessary. Indeed, in the data table we see that there
+are three rows with \texttt{A==1} and \texttt{B==11} with $Y$ values $1, 2$,
+and $7$, resulting in $t_Y=7$ for this group.
+
+Next, the algorithm tries to compute the total for group
+$(\texttt{A}=2,\texttt{B}=12)$ (in green) but finds that there are only two
+such rows. It now defines a new group $(\texttt{A}=2,\texttt{B1}=1)$ and finds
+that there are three records in that group so it computes $t_Y=8+16+32=56$.
+Similarly, it finds one record with $(\texttt{A}=2,\texttt{B}=13)$ and
+collapses to $(\texttt{A}=2,\texttt{B1}=1)$, again yielding $t_y=56$.
+
+Finally, for $(\texttt{A}=2,\texttt{B}=21)$ the algorithm finds only a single
+record. It collapses to $(\texttt{A}=2,\texttt{B1}=2)$ and finds two so it
+collapses further to $(\texttt{A}=2)$ to find three records.  This yields
+$t_Y=64+128+256=448$. Similarly, the groups $(\texttt{A}=3, \texttt{B}=22)$ and
+$(\texttt{A}=3,\texttt{B}=12)$ are collapsed to $(\texttt{A}=2)$.
+
+In R code the previous example can be executed as follows.
+\begin{verbatim}
+  > library(rcollapse)
+  > input <- data.frame(
+  +      A  = c(1,1,1,2,2,2,3,3,3)
+  +    , B  = c(11,11,11,12,12,13,21,22,12)
+  +    , B1 = c(1,1,1,1,1,1,2,2,1)
+  +    , Y  = 2^(0:8)
+  + )
+  >
+  > collapse(data     = input
+  +        , collapse = A*B ~ A*B1 + A
+  +        , test     = function(d) nrow(d)>=3
+  +        , tY       = sum(Y) )
+    A  B level  tY
+  1 1 11     0   7
+  2 2 12     1  56
+  3 2 13     1  56
+  4 3 21     2 448
+  5 3 22     2 448
+  6 3 12     2 448
+\end{verbatim}
+%
+The formula interface allows users to quickly experiment with different
+collapsing schemes, but only after the necessary variables have been added to
+the original data frame, which may require some extensive data manipulation.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{The data frame interface}
+
+
+
+
+
+\subsection{Specifying tests}
+
+\subsection{Programming over \texttt{collapse}}
+
+\section{Extensive example: imputing economic data}
+
+\section{Summary and conclusion}
 
 \begin{itemize}
-\item{Specification of collapsing sequence with multiple collapsing variables (e.g. first size class, then NACE code). Idea: \texttt{collapse(data, by, formula, FUN,...)} where \texttt{formula} is
-of the form \texttt{A0*B0 \~. A0*B1 + A1*B1 + A2*B1}. lhs is target level, rhs is collapsing sequence. }
-\item{Specification of collapsing sequence with different aggregators per collapsing step.}
 \item{Record-wise results}
 \item{Record-wise imputation}
 \item{Representation of hierarchical classifications: parent-child lists vs tabular}

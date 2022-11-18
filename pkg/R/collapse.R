@@ -67,7 +67,21 @@
 #'
 #'
 #' @examples
-#' # some example data
+#'
+#' # example of formula defining collapsing scheme
+#' input <- data.frame(
+#'    A  = c(1,1,1,2,2,2,3,3,3)
+#'  , B  = c(11,11,11,12,12,13,21,22,12)
+#'  , B1 = c(1,1,1,1,1,1,2,2,1)
+#'  , Y  = 2^(0:8)
+#' )
+#' collapse(input, collapse=A*B ~ A*B1 + A
+#'         , test = function(d) nrow(d) >= 3
+#'         , tY = sum(Y))
+#' 
+#'
+#'
+#' # example with data.frame defining collapsing scheme
 #' dat <- data.frame(A0 = c("11","12","11","22"), Y = c(2,4,6,8))
 #' # collapsing scheme
 #' csh <- data.frame(
@@ -140,23 +154,26 @@ collapse2 <- function(data, formula, test,...){
   # set up output set
   lhs_vars <- all.vars(formula[[2]])
   out <- cbind(unique(data[lhs_vars]), level=NA_integer_)
-  vals <- as.data.frame(matrix(NA, nrow=nrow(collapse), ncol=length(expres)))
+  vals <- as.data.frame(matrix(NA, nrow=nrow(out), ncol=length(exprs)))
   colnames(vals) <- names(exprs)
   out <- cbind(out, vals)
   
   for (ia in seq_len(nrow(out))){
     d <- merge(data, out[ia,lhs_vars])
     j = 0
+    rhs_vars <- ""
     while(j < length(collapse) && !test(d)){
       j <- j + 1
       rhs_vars <- all.vars(collapse[[j]])
-      d <- merge(data, d[1, rhs_vars])
+      d <- merge(data, d[1, rhs_vars,drop=FALSE])
     }
+
     if ( j < length(collapse) || test(d)){
       out[ia,length(lhs_vars) + 1] <- j
-      out[ia,(length(lhs_vars)+1):ncol(out)] <- lapply(exprs, function(e) with(d, eval(e)))
+      out[ia,(length(lhs_vars)+2):ncol(out)] <- lapply(exprs, function(e) with(d, eval(e)))
     }
   }
+  rownames(out) <- NULL
   out
 
 }
