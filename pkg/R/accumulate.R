@@ -5,7 +5,12 @@
 #' is expanded according to a user-defined 'collapsing' scheme.  This happens
 #' recursively until either the group satisfies all conditions and the
 #' aggregate is computed, or we run out of collapsing possibilities and the
-#' \code{NA} is returned for that group.
+#' \code{NA} is returned for that group. 
+#' \itemize{
+#'  \item{\code{accumulate} aggregates over all non-grouping variables defined in 
+#'  \code{collapse}} 
+#' \item{\code{cumulate} uses a syntax akin to \code{dplyr::summarise}}
+#' }
 #'
 #'
 #' @param data \code{[data.frame]} The data to aggregate by (collapsing) groups.
@@ -24,8 +29,8 @@
 #'
 #' If all combinations of collapsing options are stored as columns in
 #' \code{data}, the \code{formula} interface can be used. An example is the
-#' easiest way to see how it works is to illustrate the idea with an example.
-#' Suppose that \code{collapse = A*B ~ A1*B + B} This means:
+#' easiest way to see how it works.  Suppose that \code{collapse = A*B ~ A1*B +
+#' B} This means:
 #' \itemize{
 #'  \item{Compute output for groups defined by variables A and B}
 #'  \item{If for a certain combination \code{(a,b)} in \code{AxB} the data does not
@@ -36,14 +41,14 @@
 #'  \item{If that does not work, return \code{NA} for that particular combination \code{(a,b)}.}
 #' }
 #' Generally, the \code{formula} must be of the form \code{X0 ~ X1 + X2 + ... +
-#' Xn} where each \code{Xi} is a product of grouping variables in the data set.
+#' Xn} where each \code{Xi} is a (product of) grouping variable(s) in the data set.
 #'
-#' @section Using a data frame to define the collapsing sequence:
+#' @section Using a data frame to define the collapsing scheme:
 #'
-#' In this case \code{collapse} is a data frame with columns
-#' \code{[A0, A1, ..., An]}. The variable \code{A0} must also be
-#' present in \code{data}, and should represent a collapsed version
-#' of \code{A0}. This means:
+#' In this case \code{collapse} is a data frame with columns \code{[A0, A1,
+#' ..., An]}.  The variable \code{A0} represents the most fine-grained
+#' grouping and must also be present in \code{data}. Aggregation works
+#' as follows.
 #' \itemize{
 #'   \item{Compute output for groups defined by variable \code{A0}}
 #'   \item{If for a certain \code{a0} in \code{A0} the corresponding selected
@@ -66,7 +71,7 @@
 #' \code{test}, then for that row, the \code{level} and subsequent columns are
 #' \code{NA}.
 #' 
-#'
+#' @seealso \code{\link{demand}}
 #'
 #' @examples
 #'
