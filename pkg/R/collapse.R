@@ -75,7 +75,7 @@
 #'  , B1 = c(1,1,1,1,1,1,2,2,1)
 #'  , Y  = 2^(0:8)
 #' )
-#' collapse(input, collapse=A*B ~ A*B1 + A
+#' accumulate(input, collapse=A*B ~ A*B1 + A
 #'         , test = function(d) nrow(d) >= 3
 #'         , tY = sum(Y))
 #' 
@@ -88,7 +88,7 @@
 #'    A0 = c("11","12","22")
 #'  , A1 = c("1" ,"1", "2") 
 #' )
-#' collapse(data = dat
+#' accumulate(data = dat
 #'    , collapse = csh
 #'    , test     = function(d) if (nrow(d)<2) FALSE else TRUE
 #'    , mn = mean(Y, na.rm=TRUE)
@@ -96,7 +96,7 @@
 #' )
 #'
 #' @export
-collapse <- function(data, collapse, test, ...){
+accumulate <- function(data, collapse, test, fun=NULL, ...){
 
   if (inherits(collapse,"data.frame")){
     collapse1(as.data.frame(data), as.data.frame(collapse), test, ...)

@@ -4,7 +4,7 @@
 d <- data.frame(A0 = as.character(c(11,11,12)), Y = c(4,8,6))
 A <- data.frame(A0 = as.character(c(11,12)), A1 = as.character(c(1,1)))
 
-out <- collapse(data = d
+out <- accumulate(data = d
   , collapse  = A
   , test      = function(d) if (nrow(d)>=2) TRUE else FALSE
   , mn = mean(Y, na.rm=TRUE)
@@ -29,7 +29,7 @@ output <- data.frame(
   , tY    = c(7,56,56,448,448,448)
 )
 
-out <- collapse(data=input
+out <- accumulate(data=input
         , collapse=A*B ~ A*B1 + A
         , test=function(d) nrow(d)>=3
         , tY = sum(Y) )

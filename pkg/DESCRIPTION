@@ -1,4 +1,4 @@
-Package: rcollapse
+Package: accumulate
 Type: Package
 Title: Split-Apply-Combine with Collapsing Groups
 Version: 0.0.1
