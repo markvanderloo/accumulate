@@ -1,5 +1,5 @@
 
 if ( requireNamespace("tinytest", quietly=TRUE) ){
-  tinytest::test_package("rcollapse")
+  tinytest::test_package("accumulate")
 }
 

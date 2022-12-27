@@ -1,3 +1,8 @@
+stopf <- function(fmt,...) stop(sprintf(fmt,...), call.=FALSE)
+
+last <- function(x) x[length(x)]
+
+
 #' Demand minimal number of functons
 #' 
 #' @param n Minimal number of records in a group.

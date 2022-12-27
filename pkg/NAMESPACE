@@ -2,6 +2,7 @@
 
 export(accumulate)
 export(csh_from_digits)
+export(cumulate)
 export(demand)
 export(fraction_complete)
 export(fraction_incomplete)
