@@ -170,9 +170,8 @@ csh_from_digits <- function(x,pad="0"){
   for ( i in seq_len(nlevels)){
     A[,i] <- substr(x,1,nlevels+1-i)
   }
-  rownames(A) <- x
   colnames(A) <- sprintf("A%d",seq_len(nlevels)-1)
-  A
+  as.data.frame(A)
 }
 
 

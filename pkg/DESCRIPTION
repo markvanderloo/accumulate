@@ -1,7 +1,7 @@
 Package: accumulate
 Type: Package
 Title: Split-Apply-Combine with Collapsing Groups
-Version: 0.0.2
+Version: 0.0.3
 Date: 2022-10-29
 Authors@R: c( person("Mark", "van der Loo", role=c("aut","cre")
              , email="mark.vanderloo@gmail.com"
@@ -13,6 +13,7 @@ Description: Estimate group aggregates, where one can set user-defined condition
    defined by the user. 
 License: EUPL
 LazyData: TRUE
-Suggests: tinytest
+VignetteBuilder: simplermarkdown
+Suggests: tinytest, simplermarkdown
 Encoding: UTF-8
 RoxygenNote: 7.2.1
