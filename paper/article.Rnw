@@ -1,39 +1,154 @@
-\documentclass[11pt, fleqn]{article}
-\usepackage[english]{babel}
+\documentclass[article,table]{jss}
+
+%% -- LaTeX packages and custom commands ---------------------------------------
+%% recommended packages
+\usepackage{orcidlink,thumbpdf,lmodern}
+
 \usepackage{amsmath, amssymb}
-
-\usepackage{colortbl, xcolor}
-
 \usepackage[ruled, linesnumbered]{algorithm2e}
 
 
-\usepackage{natbib}
-\setlength{\parskip}{\baselineskip}%
-\setlength{\parindent}{0pt}%
 
-\title{Spit-Apply-Combine with Collapsing Groups}
-\author{Mark P.J. van der Loo}
-\date{CONCEPT \today{}}
+%% new custom commands
+\newcommand{\class}[1]{`\code{#1}'}
+\newcommand{\fct}[1]{\code{#1()}}
+
+
+
+%% For Sweave-based articles about R packages:
+%% need no \usepackage{Sweave}
+\SweaveOpts{engine=R, eps=FALSE, keep.source = TRUE}
+<<preliminaries, echo=FALSE, results=hide>>=
+options(prompt = "R> ", continue = "+  ", width = 70, useFancyQuotes = FALSE)
+@
+
+
+%% -- Article metainformation (author, title, ...) -----------------------------
+
+%% - \author{} with primary affiliation (and optionally ORCID link)
+%% - \Plainauthor{} without affiliations
+%% - Separate authors by \And or \AND (in \author) or by comma (in \Plainauthor).
+%% - \AND starts a new line, \And does not.
+\author{Mark P.J. van der Loo~\orcidlink{0000-0002-9807-4686}\\
+        Statistics Netherlands and University of Leiden}
+
+\Plainauthor{Mark P.J. van der Loo}
+
+%% - \title{} in title case
+%% - \Plaintitle{} without LaTeX markup (if any)
+%% - \Shorttitle{} with LaTeX markup (if any), used as running title
+\title{Split-Apply-Combine with Collapsing Groups}
+\Plaintitle{Split-Apply-Combine with Collapsing Groups}
+\Shorttitle{Split-Apply-Combine with Collapsing Groups}
+
+
+\Abstract{
+foo
+}
+
+%% - \Keywords{} with LaTeX markup, at least one required
+%% - \Plainkeywords{} without LaTeX markup (if necessary)
+%% - Should be comma-separated and in sentence case.
+\Keywords{data analysis, \proglang{R}}
+\Plainkeywords{data analysis, R}
+
+%% - \Address{} of at least one author
+%% - May contain multiple affiliations for each author
+%%   (in extra lines, separated by \emph{and}\\).
+%% - May contain multiple authors for the same affiliation
+%%   (in the same first line, separated by comma).
+\Address{
+  Mark P.J. van der Loo~\orcidlink{0000-0002-9807-4686}\\
+  Research and Development\\
+  Statistics Netherlands\\
+  Henri Faasdreef 312\\
+  2492JP Den Haag, the Netherlands\\
+  E-mail: \email{mpj.vanderloo@cbs.nl}\\
+  URL: \url{https://www.markvanderloo.eu}\\
+  \emph{and}\\
+  Leiden Institute of Advanced Computer Science (LIACS)\\
+  P.O. Box 9512\\
+  2300 RA Leiden, The Netherlands\\
+}
 
 \begin{document}
-\maketitle
+
+
+%% -- Introduction -------------------------------------------------------------
+
+%% - In principle "as usual".
+%% - But should typically have some discussion of both _software_ and _methods_.
+%% - Use \proglang{}, \pkg{}, and \code{} markup throughout the manuscript.
+
+
 
 \section{Introduction}
 The operation of splitting a data set into non-overlapping groups, computing an
-aggregate for each group, and combining the results into a new datasets is one
-of the most common operations in data analyses. The idea behind this so-called
-split-apply-combine approach is that the calculation for each groups only uses
-data available within the group. However, in some cases the quality of data in
-a group may be insufficient for producing a reliable group aggregate. Common
-quality issues include insufficient records, or too many records with values
-for certain variables missing. In such cases it is not uncommon to use data
-from outside the target group  to estimate the group aggregate. One example is
-Small Area Estimation, where the lack of observations in one group is
-compensated by using data from similar but other groups. Another area where
-such approaches occur is group-wise imputation. For example, one may wish to
-impute a group estimate (say, mean, or median) for missing values. If there are
-too little observations to provide an accurate estimate of the group mean, the
-group may be expanded, trading bias for variance.
+aggregate for each group, and combining the results into a new dataset is one
+of the most common operations in data analyses. Indeed, any software for data
+analyses includes some functionality for this. For example, the combination of
+\code{split}/\code{lapply}/\code{unsplit} as well as \code{aggregate} have been
+a part of the \proglang{S} \citep{becker1988new} and \proglang{R} \citep{rcore}
+languages for a long time. For \proglang{R} there are several packages that
+implement functionality for this, including \pkg{plyr}
+\citep{wickham2011split}, it's successor \pkg{dplyr} \citep{wickham2022dplyr},
+it's drop-in replacement \pkg{poorman} \citep{eastwood2022poorman}, and
+\proglang{R} packages \pkg{collapse} \citep{krantz2022collapse} and
+\pkg{data.table} \citep{dowle2022datatable}. In \proglang{Python} the
+\code{pandas} package implements several methods for grouping records and
+aggregating over one or more columns in data frame objects. Similarly, the
+\pkg{DataFrames} package for \proglang{julia} implements such functionality
+\citep{kaminski2022dataframes}.
+
+In all packages mentioned, the calculation for each group uses data available
+within the group. However, there are valid use cases where a group aggregate is
+determined using attributes from out-of-group entities. One example where this
+occurs is in the area of small area estimation (see e.g.
+\citet{molina2015sae}. Here, one wishes to estimate an aggregate for a group,
+for example a geographical region, or a detailed population subset, where the
+number of (sampled) observations so small that the variance of the estimate
+would be unacceptably large. Small area estimation is a collection of
+bias-variance trade-offs where one `borrows statistical strength' from
+out-of-group records to obtain a stable estimate for groups with few
+observations. The out-of-group records can be obtained, for example by
+combining the original group with a group of records that are deemed similar in
+certain respects. A second area where out-of-group records play a role is in
+certain hot-deck imputation methods \cite{andridge2010review}.  In
+$k$-nearest-neighbours imputation for example, one finds a set of $k$ donor
+records that are preferably in the same group, but this condition may be
+relaxed if there are not enough records in the group. In the \pkg{VIM} package
+for \proglang{R} \citep{kowarik2016imputation}, this is controlled by a
+combination of the Gower distance and setting conditions on minimal number of
+donors. A third example comes from the field of statistical disclosure control
+\citep{hundepool2012statistical}. In this field, the so-called $p$\% rule states
+that the value in a grouped aggregation may not be determined for more than $p$
+percent by a single entity. This occurs for example, when a certain economic
+activity in a geographic region is dominated by a single company. In such cases
+the value can either not be published, or one publishes an aggregate over
+larger groups.
+
+
+
+
+
+ 
+
+
+
+
+
+Common quality issues
+include insufficient records, or too many records with values for certain
+variables missing. In such cases it is not uncommon to use data from outside
+the target group  to estimate the group aggregate. One example is Small Area
+Estimation, where the lack of observations in one group is compensated by using
+data from similar but other groups. Another area where such approaches occur is
+group-wise imputation. For example, one may wish to impute a group estimate
+(say, mean, or median) for missing values. If there are too little observations
+to provide an accurate estimate of the group mean, the group may be expanded,
+trading bias for variance. 
+
+
 
 \begin{itemize}
 \item Add SDC collapsing as application
@@ -59,7 +174,7 @@ to combine groups with a common ancestor in the hierarchy.
 
 In this paper we formalise the concept of `collapsing scheme', and give an
 algorithm for split-apply-combine operations based on it. Next, we demonstrate
-the R package \texttt{rcollapse} that implements this algorithm together with
+the R package \texttt{accumulate} that implements this algorithm together with
 some utility functions that make working with collapsing schemes easier.
 
 
@@ -107,6 +222,7 @@ $R = \{\}$\;
   $R = R\cup \{(a,\phi(d))\}$\tcp*{aggregate and add to result}
 }
 \end{algorithm}
+
 Here, the output is collected in a set $R$ (this set is technically a function
 $A\to X$ since it pairs for each $a\in A$ with one element of $X$). We also
 introduced some new notation: the notation $2^U$ stands for `the set of all
@@ -171,7 +287,7 @@ grouping level, and the last digit the most detailed level. This induces a
 collapsing sequence by combining groups that have the same parent in the
 hierarchy. Below is an example, based on a small piece of the NACE code list.
 %
-\begin{equation}
+\begin{table}[h!]
 \begin{tabular}{rrr}
 \hline
  $A_0$& $A_1$ & $A_2$\\
@@ -186,7 +302,8 @@ hierarchy. Below is an example, based on a small piece of the NACE code list.
 \hline
 \end{tabular}
 \label{eq:tablerep}
-\end{equation}
+\end{table}
+
 Here, $A_0$ is the most detailed partition, splitting a dataset into seven
 groups, relating to $\{0111,\ldots,0124\}$. In $A_1$ there are two groups.
 The first, labeled $01.1$ is constructed by combining $0111, 0112$ and
@@ -268,7 +385,8 @@ executed, then no answer is returned.
 \item tree with different levels of details
 \end{itemize}
 
-\section{The \texttt{rcollapse} package}
+
+\section{The accumulate R package}
 Grouped aggregation with a fall-though scenario based on a collapsing scheme
 requires a lot of parameters to be specified by the user. Besides the data, one
 needs to specify the method(s) of aggregation, the collapsing scheme, and the
@@ -276,7 +394,7 @@ condition to decide whether a subset is fit for aggregation or a next collapse
 is necessary. The main function of the package is caled \texttt{collapse}
 and has the following signature.
 \begin{verbatim}
-  collapse(data, collapse, test, ...)
+  accumulate(data, collapse, test, ...)
 \end{verbatim}
 where \texttt{data} is a data frame, \texttt{collapse} represents the collapse
 sequence, \texttt{test} is a function that accepts a subset of \texttt{data}
@@ -291,7 +409,7 @@ The first columns represent the variables that define the output grouping, the
 next column is an integer that indicates the level of collapsing used to
 compute the aggregate, and the last set of columns store the aggregates.
 
-To accommodate the different use cases, the \texttt{rcollapse} package supports
+To accommodate the different use cases, the \pkg{accumulate} package supports
 two different interfaces for specifying collapse sequences.  The first and most
 general is the formula interface, that requires that the collapsing sequence is
 represented as variables in the data set to be aggregated. The second is the
@@ -312,7 +430,7 @@ schemes. For example when grouping by two categorical variables \texttt{A} and
 \texttt{B}, one may first want to collapse variable $\texttt{B}$ into a
 variable \texttt{B1} and if that is not sufficient, in the next step grouping
 in the second variable is dropped so grouping is only defined by \texttt{A}.
-In \texttt{rcollapse} such a scheme is denoted with the formula \texttt{A*B \~{}
+In \pkg{accumulate} such a scheme is denoted with the formula \texttt{A*B \~{}
 A*B1 + A}. Here, the left-hand-side denotes the desired output grouping level
 that is attempted first, and the right-hand-side denotes consecutive collapse
 levels separated by \texttt{+}.
@@ -375,7 +493,7 @@ $(\texttt{A}=3,\texttt{B}=12)$ are collapsed to $(\texttt{A}=2)$.
 
 In R code the previous example can be executed as follows.
 \begin{verbatim}
-  > library(rcollapse)
+  > library(accumulate)
   > input <- data.frame(
   +      A  = c(1,1,1,2,2,2,3,3,3)
   +    , B  = c(11,11,11,12,12,13,21,22,12)
@@ -409,7 +527,7 @@ the original data frame, which may require some extensive data manipulation.
 
 \subsection{Specifying tests}
 
-\subsection{Programming over \texttt{collapse}}
+\subsection{Programming over accumulate }
 
 \section{Extensive example: imputing economic data}
 
@@ -421,8 +539,9 @@ the original data frame, which may require some extensive data manipulation.
 \item{Representation of hierarchical classifications: parent-child lists vs tabular}
 \end{itemize}
 
-\bibliographystyle{plainnat}
-\bibliography{vanderloo}
+\bibliography{refs}
+
+
+
+
 \end{document}
-
-
