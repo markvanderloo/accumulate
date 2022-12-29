@@ -113,19 +113,23 @@ out-of-group records to obtain a stable estimate for groups with few
 observations. The out-of-group records can be obtained, for example by
 combining the original group with a group of records that are deemed similar in
 certain respects. A second area where out-of-group records play a role is in
-certain hot-deck imputation methods \cite{andridge2010review}.  In
+certain hot-deck imputation methods \citep{andridge2010review}.  In
 $k$-nearest-neighbours imputation for example, one finds a set of $k$ donor
 records that are preferably in the same group, but this condition may be
-relaxed if there are not enough records in the group. In the \pkg{VIM} package
+relaxed if there are not enough records in the group.  In the \pkg{VIM} package
 for \proglang{R} \citep{kowarik2016imputation}, this is controlled by a
 combination of the Gower distance and setting conditions on minimal number of
-donors. A third example comes from the field of statistical disclosure control
-\citep{hundepool2012statistical}. In this field, the so-called $p$\% rule states
-that the value in a grouped aggregation may not be determined for more than $p$
-percent by a single entity. This occurs for example, when a certain economic
-activity in a geographic region is dominated by a single company. In such cases
-the value can either not be published, or one publishes an aggregate over
-larger groups.
+donors. In practice, imputation is often performed via a fall-though scenario,
+where one first tries to estimate a model within a group, but if the group is
+too small for a reliable estimate of model parameters, the group is enlarged by
+combining similar groups, similar to the small-area estimation scenario. A
+third example comes from the field of statistical disclosure control
+\citep{hundepool2012statistical}. In this field, the so-called $p$\% rule
+states that the value in a grouped aggregation may not be determined for more
+than $p$ percent by a single entity. This occurs for example, when a certain
+economic activity in a geographic region is dominated by a single company. In
+such cases the value can either not be published (suppression), or one
+publishes an aggregate over larger groups.
 
 
 
