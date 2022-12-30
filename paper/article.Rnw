@@ -67,6 +67,7 @@ foo
   URL: \url{https://www.markvanderloo.eu}\\
   \emph{and}\\
   Leiden Institute of Advanced Computer Science (LIACS)\\
+  University of Leiden\\
   P.O. Box 9512\\
   2300 RA Leiden, The Netherlands\\
 }
@@ -615,6 +616,13 @@ csh <- data.frame(
 , AB1 = c("1-1" , "2-1" ,"2-1" ,"3-2" ,"3-2" ,"3-1" )
 , A   = c("1"   , "2"   ,"2"   ,"3"   ,"3"   ,"3"   ))
 @
+In this data frame, two consecutive columns should be read as a child-parent
+relation. For example, in the first collapsing step the groups defined by
+\code{AB == "2-12"} and \code{AB=="2-13"} both collapse to \code{AB1 == "2-1"}.
+In this artificial example the codes do not mean anything, but in realistic
+cases where codes represent a (hierarchical) classification, domain experts
+usually have a good grasp of which codes can be combined. 
+
 The calls to \code{cumulate()} and \code{accumulate()} now look as follows.
 <<>>=
 accumulate(input, collapse=csh, test = min_records(3), sum)
@@ -638,6 +646,7 @@ cumulate(input, collapse=csh, test=min_records(3), tY=sum(Y), tY2 = sum(Y2))
 \item{Representation of hierarchical classifications: parent-child lists vs tabular}
 \end{itemize}
 
+\newpage
 \bibliography{refs}
 
 
