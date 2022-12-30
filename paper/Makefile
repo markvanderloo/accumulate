@@ -1,5 +1,5 @@
 
-article.pdf: article.Rnw
+article.pdf: article.Rnw refs.bib
 	R -s -e "Sweave('article.Rnw')"
 	pdflatex article.tex
 	bibtex article

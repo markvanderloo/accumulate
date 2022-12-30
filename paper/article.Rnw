@@ -107,13 +107,12 @@ occurs is in the area of small area estimation (see e.g.
 \citet{molina2015sae}. Here, one wishes to estimate an aggregate for a group,
 for example a geographical region, or a detailed population subset, where the
 number of (sampled) observations so small that the variance of the estimate
-would be unacceptably large. Small area estimation is a collection of
-bias-variance trade-offs where one `borrows statistical strength' from
-out-of-group records to obtain a stable estimate for groups with few
-observations. The out-of-group records can be obtained, for example by
-combining the original group with a group of records that are deemed similar in
-certain respects. A second area where out-of-group records play a role is in
-certain hot-deck imputation methods \citep{andridge2010review}.  In
+would be unacceptably large. In small area estimation (SAE) one trades bias for
+variance by `borrowing statistical strength' from out-of-group records. The
+out-of-group records can be obtained, for example by combining the original
+small group with a group of records that are deemed similar in certain
+respects. A second area where out-of-group records play a role is in certain
+hot-deck imputation methods \citep{andridge2010review}.  In
 $k$-nearest-neighbours imputation for example, one finds a set of $k$ donor
 records that are preferably in the same group, but this condition may be
 relaxed if there are not enough records in the group.  In the \pkg{VIM} package
@@ -123,63 +122,88 @@ donors. In practice, imputation is often performed via a fall-though scenario,
 where one first tries to estimate a model within a group, but if the group is
 too small for a reliable estimate of model parameters, the group is enlarged by
 combining similar groups, similar to the small-area estimation scenario. A
-third example comes from the field of statistical disclosure control
+third example comes from the field of statistical disclosure control (SDC)
 \citep{hundepool2012statistical}. In this field, the so-called $p$\% rule
 states that the value in a grouped aggregation may not be determined for more
 than $p$ percent by a single entity. This occurs for example, when a certain
 economic activity in a geographic region is dominated by a single company. In
 such cases the value can either not be published (suppression), or one
-publishes an aggregate over larger groups.
+publishes an aggregate over larger groups. Similarly for microdata there is the
+concept of $k$-anonymity, which states that each combination of properties must
+occur at least $k$ times in a data set so as to prevent reidentification or
+disclosure of individual properties. One way to achieve this is to combine
+detailed groupings based on categorical variables into larger groups. For
+example by combining groups that in a hierarchical classification have the same
+parent.
+
+Both SAE and SDC are supported by \proglang{R} and other free software. Small
+area estimation methodology has for example been implemented in the \pkg{sae}
+package of \cite{molina2015sae} and the \pkg{hbsae} package of
+\cite{boonstra2022hbsae}.  Disclosure control methodology is implemented in the
+free and open source standalone software $\tau-$Argus for tabular data and
+$\mu$-Argus for microdata \citep{argus2022}, and is also supported by
+\proglang{R} packages \pkg{sdcMicro} and \pkg{sdcTable}
+\citep{templ2015statistical, meindl2022sdctable}. Regarding imputation
+methodology, the CRAN task view on missing
+data\footnote{https://cran.r-project.org/web/views/MissingData.html} currently
+lists 203 \pkg{R} packages that support some form of estimating missing data.
+The \pkg{simputation} package \citep{loo2022simputation} seems to be the only
+one that allows for some kind of fall-through scenario for selecting methods,
+but it does not allow for dynamic grouping.
+
+Summarizing, we see that on one hand there are many implementations available
+for generic aggregation based on fixed groups. On the other hand there are
+domain-specific implementation for methods where dynamic grouping of a set of
+records plays a role. This paper presents a generic solution to
+split-apply-combine aggregation where groups can be collapsed dynamically in
+the form of an \pkg{R} package \pkg{accumulate} \cite{loo2022accumulate}.
+
+The \code{accumulate} package serves the use case where a user wishes to
+compute aggregates for a certain grouping of records. However, if a certain
+instance of a group does not meet user-defined quality requirements, the set of
+records is expanded by (recursively) collapsing the grouping according to a
+user-defined scheme. For example, given some financial data on companies, one
+wishes to compute the average profit to turnover ratio for each combination of
+economic activity and size class. If for a certain combination of economic
+activity and size class there are too few records for a reliable estimate, one
+could drop size class and compute the average ratio over all records within a
+certain economic activity. Or, one could choose to course-grain economic
+activities by collapsing groups with activities that are deemed similar enough.
+
+
+The package has been developed with the following design choices in mind.
+First, the interface should be easy to learn for \proglang{R} users, and thus
+should resemble existing popular interfaces where possible. Second, users
+should be free to define any possibly multi-step, collapsing scheme.  Here, we
+keep in mind that collapsing schemes may be constructed manually based on
+domain knowledge and that users may want to experiment with several schemes
+before deciding on a final solution. This calls for a certain separation of
+concerns between defining collapsing schemes and applying them to data.  The
+package should also support collapsing schemes that follow naturally from
+hierarchical classification systems. Third, users should have the flexibility
+to define any quality requirement on the grouping while common quality
+requiremtns are supported out of the box. Common quality requirements include a
+minimum number of records, or a minum fraction of records without missing
+values, or a minimum number of records with non-zero values. 
+
+The rest of this paper is organized as follows. In the next section we formally
+define the concepts of the quality requirements and a collapsing scheme. We
+describe the fundamental algorithm in pseudocode and compare it with the
+standard grouping scenario. We also discuss the time and space complexity and
+some caveats with implementation and performance. This section is mainly of
+interest for developers who wish to include such functionality in their own
+package. In Section~\ref{sect:accumulate} we describe \pkg{accumulate} package
+and demonstrate how the design choices have determined its implementation.  We
+give some toy examples to extensively discuss the input and output of the main
+functions, discuss how to define tests in some detail, and also explain how one
+can program over the functions in the package.  Section~\ref{sect:example}
+works through a realistic example based on a synthetic dataset of economic
+microdata. We conclude with a summary and outlook in
+Section~\ref{sect:conclusion}.
 
 
 
 
-
- 
-
-
-
-
-
-Common quality issues
-include insufficient records, or too many records with values for certain
-variables missing. In such cases it is not uncommon to use data from outside
-the target group  to estimate the group aggregate. One example is Small Area
-Estimation, where the lack of observations in one group is compensated by using
-data from similar but other groups. Another area where such approaches occur is
-group-wise imputation. For example, one may wish to impute a group estimate
-(say, mean, or median) for missing values. If there are too little observations
-to provide an accurate estimate of the group mean, the group may be expanded,
-trading bias for variance. 
-
-
-
-\begin{itemize}
-\item Add SDC collapsing as application
-\end{itemize}
-
-One approach that frequently occurs in practice is to use a so-called
-collapsing scheme. In this approach one attempts to estimate the aggregate for
-the most fine-grained grouping first.  If this is not possible, two or more
-groups are combined to provide input for estimating a value for the
-fine-grained group. The collapsing scheme defines which groups may be combined,
-and it may consist of multiple levels of collapsing; in principle to the point
-where the whole data set is used to estimate an aggregate value for a single
-group.
-
-Collapsing schemes can be the result of an optimisation, but they frequently
-result from subject matter as well. For example, in the case of hierarchical
-classifications, there is a natural ordering of groups that are similar from a
-subject matter point of view (whether that means that they can be considered
-representative for each other is another, statistical, question).  Examples
-include the NACE classification of economic activities or the ISCO
-classification of professions. Both have a tree-like structure that can be used
-to combine groups with a common ancestor in the hierarchy.
-
-In this paper we formalise the concept of `collapsing scheme', and give an
-algorithm for split-apply-combine operations based on it. Next, we demonstrate
-the R package \texttt{accumulate} that implements this algorithm together with
-some utility functions that make working with collapsing schemes easier.
 
 
 
@@ -390,7 +414,7 @@ executed, then no answer is returned.
 \end{itemize}
 
 
-\section{The accumulate R package}
+\section{The accumulate R package}\label{sect:accumulate}
 Grouped aggregation with a fall-though scenario based on a collapsing scheme
 requires a lot of parameters to be specified by the user. Besides the data, one
 needs to specify the method(s) of aggregation, the collapsing scheme, and the
@@ -533,9 +557,9 @@ the original data frame, which may require some extensive data manipulation.
 
 \subsection{Programming over accumulate }
 
-\section{Extensive example: imputing economic data}
+\section{Extensive example: imputing economic data} \label{sect:example}
 
-\section{Summary and conclusion}
+\section{Summary and conclusion}\label{sect:conclusion}
 
 \begin{itemize}
 \item{Record-wise results}
