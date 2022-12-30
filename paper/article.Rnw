@@ -261,26 +261,22 @@ general for the current algorithm, but it will come in handy when we move to
 collapsing groups.
 
 Let us see how the elements $U$, $f:U\to A$, and $\phi$ are implemented
-in practice. Consider the signature of the R \texttt{aggregate} function for data
+in practice. Consider the signature of the R \code{aggregate()} function for data
 frames (we skip arguments that are not important for the discussion).
 \begin{verbatim}
   aggregate(x, by, FUN)
 \end{verbatim}
-Here, \texttt{x} is a data frame where each column is a variable $U$ to be
-aggregated.  The argument \texttt{by} represents the record-wise label(s) that
+Here, \code{x} is a data frame where each column is a variable $U$ to be
+aggregated.  The parameter \code{by} represents the record-wise label(s) that
 are used for grouping. So the function $f\to A$ is implemented by forcing the
-user to make sure that the position of each label in \texttt{by} corresponds to
-the row number in the data frame \texttt{x}. The argument \texttt{FUN} is the
-function $\phi$ that aggregates each subset of \texttt{x}.  Here is an example of how
+user to make sure that the position of each label in \code{by} corresponds to
+the row number in the data frame \code{x}. The argument \code{FUN} is the
+function $\phi$ that aggregates each subset of \code{x}.  Here is an example of how
 a user might call this function from the R prompt.
 %
-\begin{verbatim}
-> aggregate(iris["Sepal.Length"], by=iris["Species"], FUN=mean)
-     Species Sepal.Length
-1     setosa        5.006
-2 versicolor        5.936
-3  virginica        6.588
-\end{verbatim}
+<<>>=
+aggregate(iris[1:2], by=iris["Species"], FUN=mean)
+@
 %
 Note that the correspondence in position of the \texttt{Species} label and the
 record position is implemented by taking them from the same data frame. The output
@@ -315,7 +311,7 @@ grouping level, and the last digit the most detailed level. This induces a
 collapsing sequence by combining groups that have the same parent in the
 hierarchy. Below is an example, based on a small piece of the NACE code list.
 %
-\begin{table}[h!]
+\begin{equation}
 \begin{tabular}{rrr}
 \hline
  $A_0$& $A_1$ & $A_2$\\
@@ -330,7 +326,7 @@ hierarchy. Below is an example, based on a small piece of the NACE code list.
 \hline
 \end{tabular}
 \label{eq:tablerep}
-\end{table}
+\end{equation}
 
 Here, $A_0$ is the most detailed partition, splitting a dataset into seven
 groups, relating to $\{0111,\ldots,0124\}$. In $A_1$ there are two groups.
@@ -406,12 +402,47 @@ suitable dataset. The condition in Line~\ref{line:cond} ensures that if no
 suitable dataset is found after the whole collapsing sequence has been
 executed, then no answer is returned.
 
+\subsection{Performance, memory, paralellization}
+Both Algorithms~\ref{alg:sac} and \ref{alg:saccg} need only $\mathcal{O}(|U|)$
+memory. The time complexity of Algorithm~\ref{alg:sac} is $\mathcal{O}(|A||U|)$
+($|A|$ the number of groups occurring in the data, and $|U|$ the number of
+records) but the actual running time is also determined by the form of the
+aggregating function $\phi$.  For simple aggregating functions such as
+summation or counting, the output can be computed with a single pass through
+$|U|$. \proglang{R} packages such as \pkg{collapse} and \pkg{data.table} have
+implemented specialized low level (\proglang{C}/\proglang{C++}) code for fast
+groupwise aggregation for some commonly occurring aggregating functions.
+Generic paralellization of Algorithm~\ref{alg:sac} can be done by paralellising
+over the grouping values $a\in A$: each worker node gets access to a set of
+records corresponding to a single group and computes the local aggregate.
+
+Algorithm~\ref{alg:saccg} has time complexity of $\mathcal{O}((n+1)|A_0||U|)$,
+Namely, in the worst case, for each $a\in A_0$ we need to collapse to the
+maximum level $A_n$. This means that for each $a\in A_0$ we need to collapse
+$n$ times, plus the initial attempt of computing aggregate without collapsing.
+The fact that we cannot generically exclude records from a calculation means
+that a generic paralellisation scheme would need to ensure that each worker
+node has access to the full dataset $|U|$. There are two types of options to do
+this: either mutliple workers gain read-only access to $U$ or each worker gets
+a copy of $U$. In the first case the workers may suffer from colliding
+read-operations which hampers linear performance improvement as a function of
+the number of workers. In the second case, one needs as many copies of the data
+as there are threads. It is possible to compute beforehand whether the dataset
+can be split into subsets that can be treated independently by determining all
+the collapsed subsets. However, this is almost as expensive as running the
+algorithm completely since it only skips the calculation of aggregates after
+collapsing. 
 
 
-\subsection{Caveat: unbalanced hierarchical classifications}
-\begin{itemize}
-\item tree with different levels of details
-\end{itemize}
+Summarizing, we see that split-apply-combine with collapsing groups has a
+higher worst-case complexity than regular split-apply-combine. Moreover,
+generic paralellization needs to either consider a specific use case (e.g.
+large or small datasets) or require user input that guides the choice of
+paralellisation scheme.
+
+
+
+
 
 
 \section{The accumulate R package}\label{sect:accumulate}
@@ -419,60 +450,65 @@ Grouped aggregation with a fall-though scenario based on a collapsing scheme
 requires a lot of parameters to be specified by the user. Besides the data, one
 needs to specify the method(s) of aggregation, the collapsing scheme, and the
 condition to decide whether a subset is fit for aggregation or a next collapse
-is necessary. The main function of the package is caled \texttt{collapse}
-and has the following signature.
+is necessary. There are two main functions in \pkg{accumulate} that offer
+slightly different interfaces.
 \begin{verbatim}
-  accumulate(data, collapse, test, ...)
+  accumulate(data, collapse, test, fun, ...)
+  cumulate(data, collapse, test, ...)
 \end{verbatim}
-where \texttt{data} is a data frame, \texttt{collapse} represents the collapse
-sequence, \texttt{test} is a function that accepts a subset of \texttt{data}
-and returns \texttt{TRUE} or \texttt{FALSE} and the ellepsis is a sequence
-of \texttt{label = expression} pairs that represent aggregation
-functions, in a similar style as \texttt{dplyr::summarize}. The output
-is a data frame that can schematically be represented as follows.
+Here \texttt{data} is a data frame, \texttt{collapse} represents the collapse
+sequence (as a \class{formula} or a \class{data frame}), and \texttt{test} is a
+function that accepts a subset of \texttt{data} and returns a boolean that
+indicates whether a subset is suited for aggregation. In \code{accumulate()},
+the parameter \code{fun} represents an aggregation function that is applied to
+every column of \code{data}, and the ellepsis (\code{...}) is for arguments
+that are passed as extra argument to \code{fun}. The interface of
+\code{accumulate()} is modeled after the \code{aggregate()} function in
+\proglang{R}.  In \code{cumulate}, the ellepsis is a sequence of
+comma-separated \code{name=expression} pairs in the style of \code{summarise()}
+from the \code{dplyr} package.
+
+The output of both functions are of the same form.  The columns of the output
+data frame and can schematically be represented as follows. 
 \begin{verbatim}
   [Grouping Variables, Collapse level, Output aggregates]
 \end{verbatim}
 The first columns represent the variables that define the output grouping, the
 next column is an integer that indicates the level of collapsing used to
-compute the aggregate, and the last set of columns store the aggregates.
+compute the aggregate (0 indicating no collapse), and the last set of columns
+store the aggregates.
 
-To accommodate the different use cases, the \pkg{accumulate} package supports
-two different interfaces for specifying collapse sequences.  The first and most
-general is the formula interface, that requires that the collapsing sequence is
+Both functions support two different interfaces for specifying collapsing
+schemes through the \code{collapse} parameter. The first and most general is
+the formula interface, which requires that the collapsing sequence is
 represented as variables in the data set to be aggregated. The second is the
-tabular interface discussed before. This only supports a single grouping
-variable. For hierarchical classifications there is a helper function to
-translate parent-child representations of such classifications into a
-collapsing sequence.
+tabular interface, where a table similar to~\eqref{eq:tablerep} is expected. 
 
-Besides complicated collapsing schemes, users must have the ability to specify
-a possibly complex condition for determining when a dataset is suitable for
-aggregation or not. The package offers some convenience functions that support common
-use cases as well as support for specifying generic conditions.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{The formula interface}
 It is not uncommon for users to use multiple variables for defining collapsing
-schemes. For example when grouping by two categorical variables \texttt{A} and
-\texttt{B}, one may first want to collapse variable $\texttt{B}$ into a
-variable \texttt{B1} and if that is not sufficient, in the next step grouping
-in the second variable is dropped so grouping is only defined by \texttt{A}.
-In \pkg{accumulate} such a scheme is denoted with the formula \texttt{A*B \~{}
+schemes. For example when grouping by two categorical variables $A$ and
+$B$, one may first want to collapse variable $B$ into a
+variable $B1$ and if that is not sufficient, grouping
+in the second variable is dropped so grouping is only defined by $A$.
+In \code{accumulate()} such a scheme is denoted with the formula \code{A*B \~{}
 A*B1 + A}. Here, the left-hand-side denotes the desired output grouping level
 that is attempted first, and the right-hand-side denotes consecutive collapse
-levels separated by \texttt{+}.
+levels separated by \code{+}.
 
 The following tables illustrate the idea. The left table represents the data
-set to be aggregated by \texttt{A} and \texttt{B}. In this example we wish to
+set to be aggregated by $A$ and $B$. In this example we wish to
 compute the sum $t_Y$ of column $Y$ per group. We demand that there are at
-least three records in a group, otherwise we collapse one step.
+least three records in a group, otherwise we collapse one step (we set values
+of $Y$ to unique powers of two, so it is clear which records are used
+to compute each value of $t_Y$).
 %
 \begin{center}
 \begin{tabular}{cccl}
-\multicolumn{4}{l}{\texttt{Input data}}\\
+\multicolumn{4}{l}{Input data}\\
 \hline
-\texttt{A} & \texttt{B} & \texttt{B1} & $Y$\\
+$A$ & $B$ & $B1$ & $Y$\\
 \hline
 \cellcolor{red!25}   1 &\cellcolor{red!25}   11 &                1       & \cellcolor{red!25}   1   \\
 \cellcolor{red!25}   1 &\cellcolor{red!25}   11 &                1       & \cellcolor{red!25}   2   \\
@@ -485,9 +521,9 @@ least three records in a group, otherwise we collapse one step.
 \cellcolor{blue!25}  3 &                     12 &                1       & \cellcolor{blue!25}  256 \\
 \hline
 \end{tabular}\hspace{1cm}\begin{tabular}{ccl}
-\multicolumn{3}{l}{\texttt{Output}}\\
+\multicolumn{3}{l}{Output}\\
 \hline
-\texttt{A*B} & \texttt{level} & $t_Y$\\
+$A\times B$ & \code{level} & $t_Y$\\
 \hline
 \rowcolor{red!25}   1 11        & 0             & 7  \\
 \rowcolor{green!25} 2 12        & 1             & 56 \\
@@ -501,57 +537,92 @@ least three records in a group, otherwise we collapse one step.
 %
 The table on the right represents the output. Colors indicate which data was
 used. The First row in the output represents group
-$(\texttt{A}=1,\texttt{B}=11)$. The collapsing level is zero, which means
+$(A=1,B=11)$. The collapsing level is zero, which means
 that no collapsing was necessary. Indeed, in the data table we see that there
-are three rows with \texttt{A==1} and \texttt{B==11} with $Y$ values $1, 2$,
+are three rows with $A=1$ and $B==11$ with $Y$ values $1, 2$,
 and $7$, resulting in $t_Y=7$ for this group.
 
 Next, the algorithm tries to compute the total for group
-$(\texttt{A}=2,\texttt{B}=12)$ (in green) but finds that there are only two
-such rows. It now defines a new group $(\texttt{A}=2,\texttt{B1}=1)$ and finds
+$(A=2,B=12)$ (in green) but finds that there are only two
+such rows. It now defines a new group $(A=2,B1=1)$ and finds
 that there are three records in that group so it computes $t_Y=8+16+32=56$.
-Similarly, it finds one record with $(\texttt{A}=2,\texttt{B}=13)$ and
-collapses to $(\texttt{A}=2,\texttt{B1}=1)$, again yielding $t_y=56$.
+Similarly, it finds one record with $(A=2,B=13)$ and
+collapses to $(A=2,B1=1)$, again yielding $t_y=56$.
 
-Finally, for $(\texttt{A}=2,\texttt{B}=21)$ the algorithm finds only a single
-record. It collapses to $(\texttt{A}=2,\texttt{B1}=2)$ and finds two so it
-collapses further to $(\texttt{A}=2)$ to find three records.  This yields
-$t_Y=64+128+256=448$. Similarly, the groups $(\texttt{A}=3, \texttt{B}=22)$ and
-$(\texttt{A}=3,\texttt{B}=12)$ are collapsed to $(\texttt{A}=2)$.
+Finally, for $(A=2,B=21)$ the algorithm finds only a single
+record. It collapses to $(A=2,B1=2)$ and finds two so it
+collapses further to $(A=2)$ to find three records.  This yields
+$t_Y=64+128+256=448$. Similarly, the groups $(A=3, B=22)$ and
+$(A=3,B=12)$ are collapsed to $(A=2)$.
 
 In R code the previous example can be executed as follows.
-\begin{verbatim}
-  > library(accumulate)
-  > input <- data.frame(
-  +      A  = c(1,1,1,2,2,2,3,3,3)
-  +    , B  = c(11,11,11,12,12,13,21,22,12)
-  +    , B1 = c(1,1,1,1,1,1,2,2,1)
-  +    , Y  = 2^(0:8)
-  + )
-  >
-  > collapse(data     = input
-  +        , collapse = A*B ~ A*B1 + A
-  +        , test     = function(d) nrow(d)>=3
-  +        , tY       = sum(Y) )
-    A  B level  tY
-  1 1 11     0   7
-  2 2 12     1  56
-  3 2 13     1  56
-  4 3 21     2 448
-  5 3 22     2 448
-  6 3 12     2 448
-\end{verbatim}
+<<>>=
+library(accumulate)
+input <- data.frame(
+     A  = c(1,1,1,2,2,2,3,3,3)
+   , B  = c(11,11,11,12,12,13,21,22,12)
+   , B1 = c(1,1,1,1,1,1,2,2,1)
+   , Y  = 2^(0:8)
+)
+
+cumulate(input, collapse = A*B ~ A*B1 + A
+        , test = function(d) nrow(d) >= 3, tY = sum(Y) )
+@
 %
 The formula interface allows users to quickly experiment with different
 collapsing schemes, but only after the necessary variables have been added to
-the original data frame, which may require some extensive data manipulation.
+the original data frame. 
+
+It is possible to get the same result with \code{accumulate()}. This will 
+cause summation over all variables that are not used in the formula object. In
+the below example we also introduce the helper function \code{min_records()}.
+<<>>=
+input$Y2 <- 3^(0:8)
+accumulate(input, collapse = A*B ~ A*B1 + A
+          , test = min_records(3), fun = sum)
+@
+This means that for experimentation, users must be careful to exclude categorical
+variables that are not used from the input data set. For example, if \code{B1}
+is not used, we get the following.
+<<>>=
+accumulate(input[-3], collapse = A*B ~ A
+          , test = min_records(3), fun = sum)
+@
+
+
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{The data frame interface}
-\eqref{eq:tablerep}
+\subsection{The data frame interface} \label{sect:dfint}
+The data frame interface is somewhat limited because it only allows for a
+single grouping variable. The advantage however setting up a collapsing scheme
+in the form of a table closely connects to domain knowledge and allows
+fine-grained control on how groups are collapsed.
+
+In order to use the data frame interface, the input dataset needs to have the
+most fine-grained grouping variable. In the running example this is
+$A\times B$, so we need to combine that into a single variable, and remove
+the other ones.
+<<>>=
+input$AB <- paste(input$A, input$B, sep="-")
+input <- input[-(1:3)]
+input
+@
+We now define the collapsing scheme as follows.
+<<>>=
+csh <- data.frame(
+  AB  = c("1-11", "2-12","2-13","3-21","3-22","3-12")
+, AB1 = c("1-1" , "2-1" ,"2-1" ,"3-2" ,"3-2" ,"3-1" )
+, A   = c("1"   , "2"   ,"2"   ,"3"   ,"3"   ,"3"   ))
+@
+The calls to \code{cumulate()} and \code{accumulate()} now look as follows.
+<<>>=
+accumulate(input, collapse=csh, test = min_records(3), sum)
+cumulate(input, collapse=csh, test=min_records(3), tY=sum(Y), tY2 = sum(Y2))
+@
 
 
-
+\subsection{Balanced and unbalanced hierarchical classifications}
 
 \subsection{Specifying tests}
 
