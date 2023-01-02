@@ -6,12 +6,16 @@
 
 \usepackage{amsmath, amssymb}
 \usepackage[ruled, linesnumbered]{algorithm2e}
-
+\usepackage{tikz}
 
 
 %% new custom commands
 \newcommand{\class}[1]{`\code{#1}'}
 \newcommand{\fct}[1]{\code{#1()}}
+
+% This allows referencing institutional authors. 
+% See: https://tex.stackexchange.com/questions/162659/formatting-of-institution-as-author-with-natbib-and-numbered-references
+\newcommand{\xfnm}[1][]{\ifx!#1!\else\unskip,\space#1\fi}
 
 
 
@@ -37,9 +41,9 @@ options(prompt = "R> ", continue = "+  ", width = 70, useFancyQuotes = FALSE)
 %% - \title{} in title case
 %% - \Plaintitle{} without LaTeX markup (if any)
 %% - \Shorttitle{} with LaTeX markup (if any), used as running title
-\title{Split-Apply-Combine with Collapsing Groups}
-\Plaintitle{Split-Apply-Combine with Collapsing Groups}
-\Shorttitle{Split-Apply-Combine with Collapsing Groups}
+\title{Split-Apply-Combine with Dynamic Grouping}
+\Plaintitle{Split-Apply-Combine with Dynamic Grouping}
+\Shorttitle{Split-Apply-Combine with Dynamic Grouping}
 
 
 \Abstract{
@@ -203,9 +207,251 @@ microdata. We conclude with a summary and outlook in
 Section~\ref{sect:conclusion}.
 
 
+\section{Dynamic grouping} \label{sect:dynamicgrouping}
+In this section the illustrate the concept of dynamic grouping with a minimal
+worked example. This example is not very realistic, but it is constructed
+to be simple enough so the whole procedure can be followed in detail. 
+
+We consider a data set with three categorical variables $A$, $B$ and $B_1$, and
+one numerical variable $Y$.  Variable $A$ has levels $\{1, 2,3\}$ and variable
+$B$ is a hierarchical classification with levels $\{11,12,13,21,22\}$. Variable
+$B_1$ is a coursegraining of $B$: for each record the value for $B_1$ is the
+first digit of $B$. Hence, $B_1$ has levels $\{1,2\}$. 
+
+Our goal is to compute the sum $t_Y$ over $Y$, grouped by $A\times B$.  We
+impose the condition that there must be at least three records in each group.
+If a certain group $(a\in A,b\in B)$ has less than three records, we attempt
+to compute the value for that group over records in $(a,b_1)$ where $b_1$ is
+obtained by taking the first digit of $b$. If we then still have less than
+three records, we take records of group $a$ to determine the value for $(a,b)$.
+
+The following tables illustrate the idea. The left table represents the data
+set to be aggregated by $A$ and $B$.  The table on the right represents the
+output. Colors indicate which data was used. 
+%
+\begin{center}
+\begin{tabular}{cccl}
+\multicolumn{4}{l}{Input data}\\
+\hline
+$A$ & $B$ & $B1$ & $Y$\\
+\hline
+\cellcolor{red!25}   1 &\cellcolor{red!25}   11 &                1       & \cellcolor{red!25}   1   \\
+\cellcolor{red!25}   1 &\cellcolor{red!25}   11 &                1       & \cellcolor{red!25}   2   \\
+\cellcolor{red!25}   1 &\cellcolor{red!25}   11 &                1       & \cellcolor{red!25}   4   \\
+\cellcolor{green!25} 2 &                     12 & \cellcolor{green!25} 1 & \cellcolor{green!25} 8   \\
+\cellcolor{green!25} 2 &                     12 & \cellcolor{green!25} 1 & \cellcolor{green!25} 16  \\
+\cellcolor{green!25} 2 &                     13 & \cellcolor{green!25} 1 & \cellcolor{green!25} 32  \\
+\cellcolor{blue!25}  3 &                     21 &                2       & \cellcolor{blue!25}  64  \\
+\cellcolor{blue!25}  3 &                     22 &                2       & \cellcolor{blue!25}  128 \\
+\cellcolor{blue!25}  3 &                     12 &                1       & \cellcolor{blue!25}  256 \\
+\hline
+\end{tabular}\hspace{1cm}\begin{tabular}{ccl}
+\multicolumn{3}{l}{Output}\\
+\hline
+$A\times B$ & \code{level} & $t_Y$\\
+\hline
+\rowcolor{red!25}   1 11        & 0             & 7  \\
+\rowcolor{green!25} 2 12        & 1             & 56 \\
+\rowcolor{green!25} 2 13        & 1             & 56 \\
+\rowcolor{blue!25}  3 21        & 2             & 448\\
+\rowcolor{blue!25}  3 22        & 2             & 448\\
+\rowcolor{blue!25}  3 12        & 2             & 448\\
+\hline
+\end{tabular}
+\label{eq:example}
+\end{center}
+%
+The First row in the output represents group $(A=1,B=11)$. The collapsing level
+is zero, which means that no collapsing was necessary. Indeed, in the data
+table we see that there are three rows with $A=1$ and $B==11$ with $Y$ values
+$1, 2$, and $7$, resulting in $t_Y=7$ for this group.
+
+Next, we try to compute the total for group $(A=2,B=12)$ (in green) but find
+that there are only two such rows. We now define a new group $(A=2,B_1=1)$ and
+find that there are three records in that group so we get 
+$t_Y=8+16+32=56$.  Similarly, there is only one record with $(A=2,B=13)$. 
+Collapsing groups to $(A=2,B1=1)$, yieds again $t_y=56$.
+
+Finally, for $(A=2,B=21)$ there is only a single record. Collapsing to
+$(A=2,B1=2)$ yields only two records, so we need to collapse further to $(A=2)$
+and finally obtain three records.  This yields $t_Y=64+128+256=448$. Similarly,
+the groups $(A=3, B=22)$ and $(A=3,B=12)$ are collapsed to $(A=2)$.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5%%%%%%%
+\section{The accumulate R package}\label{sect:accumulate}
+Grouped aggregation with a fall-though scenario based on a collapsing scheme
+requires a fair amount of specification by the user. Besides the data to be
+aggregated, one needs to specify the method(s) of aggregation, the collapsing
+scheme, and the condition to decide whether a subset is fit for aggregation or
+a next collapse is necessary. There are two main functions in \pkg{accumulate}
+that offer slightly different interfaces.
+\begin{verbatim}
+  accumulate(data, collapse, test, fun, ...)
+  cumulate(data, collapse, test, ...)
+\end{verbatim}
+Here \texttt{data} is a data frame holding data to be aggregated;
+\texttt{collapse} represents the collapse sequence (as a \class{formula} or a
+\class{data frame}), and \texttt{test} is a function that accepts a subset of
+\texttt{data} and returns a boolean that indicates whether a subset is suited
+for aggregation or not. In \code{accumulate()}, the parameter \code{fun}
+represents an aggregation function that is applied to every column of
+\code{data}, and the ellepsis (\code{...}) is for arguments that are passed as
+extra argument to \code{fun}. The interface of \code{accumulate()} is modeled
+after the \code{aggregate()} function in \proglang{R}.  In \code{cumulate}, the
+ellepsis is a sequence of comma-separated \code{name=expression} pairs in the
+style of \code{summarise()} from the \code{dplyr} package.
+
+The output of both functions are of the same form. The columns of the output
+data frame and can schematically be represented as follows. 
+\begin{verbatim}
+  [Grouping Variables, Collapse level, Output aggregates]
+\end{verbatim}
+The first columns represent the variables that define the output grouping, the
+next column is an integer that indicates the level of collapsing used to
+compute the aggregate (0 indicating no collapse), and the last set of columns
+store the aggregates.
+
+Both functions support two different interfaces for specifying collapsing
+schemes through the \code{collapse} parameter. The first and most general is
+the formula interface, which requires that the collapsing sequence is
+represented as variables in the data set to be aggregated. The second is the
+tabular interface, where a table similar to~\eqref{eq:tablerep} is expected. 
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{The formula interface}
+We will use the example of Section~\ref{sect:dynamicgrouping} to illustrate
+the formula interface.
+<<>>=
+library(accumulate)
+input <- data.frame(
+     A  = c(1,1,1,2,2,2,3,3,3)
+   , B  = c(11,11,11,12,12,13,21,22,12)
+   , B1 = c(1,1,1,1,1,1,2,2,1)
+   , Y  = 2^(0:8)
+)
+
+cumulate(input, collapse = A*B ~ A*B1 + A
+        , test = function(d) nrow(d) >= 3, tY = sum(Y) )
+@
+%
+Consider the formula \code{A*B ~ A*B1 + A} in the call to \code{cumulate()}.
+The left-hand-side \code{A*B} is the target output grouping. The
+ritght-hand-side is to be interpreted as the collapsing sequnce: if an instance
+of \code{A*B} does not pass the test, then collapse to \code{A*B1}, and if that
+does not pass the test collapse to \code{A}. If this final grouping also does
+not pass the test, the result is \code{NA}.
+
+Summarizing, the formula interface is always of the follwing form.
+\begin{verbatim}
+  Target grouping ~ Alternative1 + Alternative2 + ... + AlternativeN
+\end{verbatim}
 
 
 
+It is possible to get the same result with \code{accumulate()}. This will cause
+summation over all variables that are not used in the formula object. In the
+below example we also introduce the helper function \code{min_records()}.
+<<>>=
+input$Y2 <- 3^(0:8)
+accumulate(input, collapse = A*B ~ A*B1 + A
+          , test = min_records(3), fun = sum)
+@
+This means that for experimentation, users must be careful to exclude categorical
+variables that are not used from the input data set. For example, if \code{B1}
+is not used, we get the following.
+<<>>=
+accumulate(input[-3], collapse = A*B ~ A
+          , test = min_records(3), fun = sum)
+@
+
+The formula interface allows users to quickly experiment with different
+collapsing schemes. It does require that all categorical variables have been
+added to the data. As an alternative, one can use the data frame specification,
+which allows for a further separation between defining the collapsing scheme
+and the actual data processing.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{The data frame interface} \label{sect:dfint}
+The data frame interface is somewhat limited because it only allows for a
+single grouping variable. The advantage however setting up a collapsing scheme
+in the form of a table closely connects to domain knowledge and allows
+fine-grained control on how groups are collapsed.
+
+In order to use the data frame interface, the input dataset must include the
+most fine-grained grouping variable. In the running example this is $A\times
+B$, so we need to combine that into a single variable, and remove the other
+ones.
+<<>>=
+input$AB <- paste(input$A, input$B, sep="-")
+input <- input[-(1:3)]
+input
+@
+We now define the collapsing scheme as follows.
+<<>>=
+csh <- data.frame(
+  AB  = c("1-11", "2-12","2-13","3-21","3-22","3-12")
+, AB1 = c("1-1" , "2-1" ,"2-1" ,"3-2" ,"3-2" ,"3-1" )
+, A   = c("1"   , "2"   ,"2"   ,"3"   ,"3"   ,"3"   ))
+csh
+@
+In this data frame, two consecutive columns should be read as a child-parent
+relation. For example, in the first collapsing step the groups defined by
+\code{AB == "2-12"} and \code{AB=="2-13"} both collapse to \code{AB1 == "2-1"}.
+In this artificial example the codes do not mean anything, but in realistic
+cases where codes represent a (hierarchical) classification, domain experts
+usually have a good grasp of which codes can be combined. 
+
+The calls to \code{cumulate()} and \code{accumulate()} now look as follows.
+<<>>=
+accumulate(input, collapse=csh, test = min_records(3), sum)
+cumulate(input, collapse=csh, test=min_records(3), tY=sum(Y), tY2 = sum(Y2))
+@
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Balanced and unbalanced hierarchical classifications}
+Hierarchical classifications are abundant in (official) statistics.
+They represent a classification of entities into non-overlapping, nested
+groupings. Examples include the International Standard Industrial Classification
+of Economic Activities (ISIC, \citet{un2022isic}), the related 
+Statistical Classification of Economic Activities in Europe (NACE, \citet{eu2006nace})
+and the Euroean Skills, Competences, Qualifications and Occupations classification
+(ESCO, \citet{eu2022esco}).
+
+Hierarchical classifications offer a natural mechanism for collapsing fine-graind groupings
+into larger groups because of the parent-child relationships. As an example consider
+a small piece of the NACE classification.
+
+\begin{center}
+\begin{tikzpicture}
+\tikzstyle{level 1}=[level distance=10mm,sibling distance=40mm]
+\tikzstyle{level 2}=[level distance=10mm,sibling distance=10mm]
+%  every node/.style = {shape=rectangle, rounded corners,
+%    draw, align=center,
+%    top color=white, bottom color=blue!20}]]
+  \node {\code{01}}
+    child { node {\code{011}}
+      child {node {\code{0111}}}
+      child {node {\code{0112}}} 
+      child {node {\code{0113}}} }
+    child { node {\code{012}}
+      child {node {\code{0121}}}
+      child {node {\code{0122}}} 
+      child {node {\code{0123}}} 
+      child {node {\code{0124}}} };
+\end{tikzpicture}
+\end{center}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Specifying tests}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Programming over accumulate }
+
+\section{Extensive example: economic data} \label{sect:example}
 
 
 \section{Formal descriptions and algorithms}
@@ -445,198 +691,6 @@ paralellisation scheme.
 
 
 
-
-\section{The accumulate R package}\label{sect:accumulate}
-Grouped aggregation with a fall-though scenario based on a collapsing scheme
-requires a lot of parameters to be specified by the user. Besides the data, one
-needs to specify the method(s) of aggregation, the collapsing scheme, and the
-condition to decide whether a subset is fit for aggregation or a next collapse
-is necessary. There are two main functions in \pkg{accumulate} that offer
-slightly different interfaces.
-\begin{verbatim}
-  accumulate(data, collapse, test, fun, ...)
-  cumulate(data, collapse, test, ...)
-\end{verbatim}
-Here \texttt{data} is a data frame, \texttt{collapse} represents the collapse
-sequence (as a \class{formula} or a \class{data frame}), and \texttt{test} is a
-function that accepts a subset of \texttt{data} and returns a boolean that
-indicates whether a subset is suited for aggregation. In \code{accumulate()},
-the parameter \code{fun} represents an aggregation function that is applied to
-every column of \code{data}, and the ellepsis (\code{...}) is for arguments
-that are passed as extra argument to \code{fun}. The interface of
-\code{accumulate()} is modeled after the \code{aggregate()} function in
-\proglang{R}.  In \code{cumulate}, the ellepsis is a sequence of
-comma-separated \code{name=expression} pairs in the style of \code{summarise()}
-from the \code{dplyr} package.
-
-The output of both functions are of the same form.  The columns of the output
-data frame and can schematically be represented as follows. 
-\begin{verbatim}
-  [Grouping Variables, Collapse level, Output aggregates]
-\end{verbatim}
-The first columns represent the variables that define the output grouping, the
-next column is an integer that indicates the level of collapsing used to
-compute the aggregate (0 indicating no collapse), and the last set of columns
-store the aggregates.
-
-Both functions support two different interfaces for specifying collapsing
-schemes through the \code{collapse} parameter. The first and most general is
-the formula interface, which requires that the collapsing sequence is
-represented as variables in the data set to be aggregated. The second is the
-tabular interface, where a table similar to~\eqref{eq:tablerep} is expected. 
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{The formula interface}
-It is not uncommon for users to use multiple variables for defining collapsing
-schemes. For example when grouping by two categorical variables $A$ and
-$B$, one may first want to collapse variable $B$ into a
-variable $B1$ and if that is not sufficient, grouping
-in the second variable is dropped so grouping is only defined by $A$.
-In \code{accumulate()} such a scheme is denoted with the formula \code{A*B \~{}
-A*B1 + A}. Here, the left-hand-side denotes the desired output grouping level
-that is attempted first, and the right-hand-side denotes consecutive collapse
-levels separated by \code{+}.
-
-The following tables illustrate the idea. The left table represents the data
-set to be aggregated by $A$ and $B$. In this example we wish to
-compute the sum $t_Y$ of column $Y$ per group. We demand that there are at
-least three records in a group, otherwise we collapse one step (we set values
-of $Y$ to unique powers of two, so it is clear which records are used
-to compute each value of $t_Y$).
-%
-\begin{center}
-\begin{tabular}{cccl}
-\multicolumn{4}{l}{Input data}\\
-\hline
-$A$ & $B$ & $B1$ & $Y$\\
-\hline
-\cellcolor{red!25}   1 &\cellcolor{red!25}   11 &                1       & \cellcolor{red!25}   1   \\
-\cellcolor{red!25}   1 &\cellcolor{red!25}   11 &                1       & \cellcolor{red!25}   2   \\
-\cellcolor{red!25}   1 &\cellcolor{red!25}   11 &                1       & \cellcolor{red!25}   4   \\
-\cellcolor{green!25} 2 &                     12 & \cellcolor{green!25} 1 & \cellcolor{green!25} 8   \\
-\cellcolor{green!25} 2 &                     12 & \cellcolor{green!25} 1 & \cellcolor{green!25} 16  \\
-\cellcolor{green!25} 2 &                     13 & \cellcolor{green!25} 1 & \cellcolor{green!25} 32  \\
-\cellcolor{blue!25}  3 &                     21 &                2       & \cellcolor{blue!25}  64  \\
-\cellcolor{blue!25}  3 &                     22 &                2       & \cellcolor{blue!25}  128 \\
-\cellcolor{blue!25}  3 &                     12 &                1       & \cellcolor{blue!25}  256 \\
-\hline
-\end{tabular}\hspace{1cm}\begin{tabular}{ccl}
-\multicolumn{3}{l}{Output}\\
-\hline
-$A\times B$ & \code{level} & $t_Y$\\
-\hline
-\rowcolor{red!25}   1 11        & 0             & 7  \\
-\rowcolor{green!25} 2 12        & 1             & 56 \\
-\rowcolor{green!25} 2 13        & 1             & 56 \\
-\rowcolor{blue!25}  3 21        & 2             & 448\\
-\rowcolor{blue!25}  3 22        & 2             & 448\\
-\rowcolor{blue!25}  3 12        & 2             & 448\\
-\hline
-\end{tabular}
-\end{center}
-%
-The table on the right represents the output. Colors indicate which data was
-used. The First row in the output represents group
-$(A=1,B=11)$. The collapsing level is zero, which means
-that no collapsing was necessary. Indeed, in the data table we see that there
-are three rows with $A=1$ and $B==11$ with $Y$ values $1, 2$,
-and $7$, resulting in $t_Y=7$ for this group.
-
-Next, the algorithm tries to compute the total for group
-$(A=2,B=12)$ (in green) but finds that there are only two
-such rows. It now defines a new group $(A=2,B1=1)$ and finds
-that there are three records in that group so it computes $t_Y=8+16+32=56$.
-Similarly, it finds one record with $(A=2,B=13)$ and
-collapses to $(A=2,B1=1)$, again yielding $t_y=56$.
-
-Finally, for $(A=2,B=21)$ the algorithm finds only a single
-record. It collapses to $(A=2,B1=2)$ and finds two so it
-collapses further to $(A=2)$ to find three records.  This yields
-$t_Y=64+128+256=448$. Similarly, the groups $(A=3, B=22)$ and
-$(A=3,B=12)$ are collapsed to $(A=2)$.
-
-In R code the previous example can be executed as follows.
-<<>>=
-library(accumulate)
-input <- data.frame(
-     A  = c(1,1,1,2,2,2,3,3,3)
-   , B  = c(11,11,11,12,12,13,21,22,12)
-   , B1 = c(1,1,1,1,1,1,2,2,1)
-   , Y  = 2^(0:8)
-)
-
-cumulate(input, collapse = A*B ~ A*B1 + A
-        , test = function(d) nrow(d) >= 3, tY = sum(Y) )
-@
-%
-The formula interface allows users to quickly experiment with different
-collapsing schemes, but only after the necessary variables have been added to
-the original data frame. 
-
-It is possible to get the same result with \code{accumulate()}. This will 
-cause summation over all variables that are not used in the formula object. In
-the below example we also introduce the helper function \code{min_records()}.
-<<>>=
-input$Y2 <- 3^(0:8)
-accumulate(input, collapse = A*B ~ A*B1 + A
-          , test = min_records(3), fun = sum)
-@
-This means that for experimentation, users must be careful to exclude categorical
-variables that are not used from the input data set. For example, if \code{B1}
-is not used, we get the following.
-<<>>=
-accumulate(input[-3], collapse = A*B ~ A
-          , test = min_records(3), fun = sum)
-@
-
-
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{The data frame interface} \label{sect:dfint}
-The data frame interface is somewhat limited because it only allows for a
-single grouping variable. The advantage however setting up a collapsing scheme
-in the form of a table closely connects to domain knowledge and allows
-fine-grained control on how groups are collapsed.
-
-In order to use the data frame interface, the input dataset needs to have the
-most fine-grained grouping variable. In the running example this is
-$A\times B$, so we need to combine that into a single variable, and remove
-the other ones.
-<<>>=
-input$AB <- paste(input$A, input$B, sep="-")
-input <- input[-(1:3)]
-input
-@
-We now define the collapsing scheme as follows.
-<<>>=
-csh <- data.frame(
-  AB  = c("1-11", "2-12","2-13","3-21","3-22","3-12")
-, AB1 = c("1-1" , "2-1" ,"2-1" ,"3-2" ,"3-2" ,"3-1" )
-, A   = c("1"   , "2"   ,"2"   ,"3"   ,"3"   ,"3"   ))
-@
-In this data frame, two consecutive columns should be read as a child-parent
-relation. For example, in the first collapsing step the groups defined by
-\code{AB == "2-12"} and \code{AB=="2-13"} both collapse to \code{AB1 == "2-1"}.
-In this artificial example the codes do not mean anything, but in realistic
-cases where codes represent a (hierarchical) classification, domain experts
-usually have a good grasp of which codes can be combined. 
-
-The calls to \code{cumulate()} and \code{accumulate()} now look as follows.
-<<>>=
-accumulate(input, collapse=csh, test = min_records(3), sum)
-cumulate(input, collapse=csh, test=min_records(3), tY=sum(Y), tY2 = sum(Y2))
-@
-
-
-\subsection{Balanced and unbalanced hierarchical classifications}
-
-\subsection{Specifying tests}
-
-\subsection{Programming over accumulate }
-
-\section{Extensive example: imputing economic data} \label{sect:example}
 
 \section{Summary and conclusion}\label{sect:conclusion}
 
