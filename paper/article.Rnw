@@ -428,9 +428,6 @@ a small piece of the NACE classification.
 \begin{tikzpicture}
 \tikzstyle{level 1}=[level distance=10mm,sibling distance=40mm]
 \tikzstyle{level 2}=[level distance=10mm,sibling distance=10mm]
-%  every node/.style = {shape=rectangle, rounded corners,
-%    draw, align=center,
-%    top color=white, bottom color=blue!20}]]
   \node {\code{01}}
     child { node {\code{011}}
       child {node {\code{0111}}}
@@ -443,6 +440,95 @@ a small piece of the NACE classification.
       child {node {\code{0124}}} };
 \end{tikzpicture}
 \end{center}
+Here, the hierarchy suggest to collapsing $\{0111,0112,0113\}$ into $\{011\}$
+(when needed) and similar for the right branch. The second level of collapsing
+would combine $\{012\}$ with $\{011\}$ into $\{01\}$. The \pkg{accumulate}
+package comes with a helper function that creates the collasping scheme from the
+lowest-level digits.
+<<>>=
+nace <- c("0111","0112","0113","0121","0121","0122","0123","0124")
+csh_from_digits(nace, levels=2)
+@ 
+Here, the parameter \code{levels} determines how many collapsing steps will be
+computed. Since all codes are prepended with zero, there is no need to collapse
+01 any further. The output can be used as argument to the \code{collapse}
+parameter of the \code{accumulate()} or \code{cumulate} functions.
+
+The situation becomes a little more involved when hierarchical classifcations
+form a tree such that the distance from leave to trunk is not the same for all
+leaves (unbalanced tree). This occurs in practice, for example when local
+organisations create an extra level of detail for some, but not all leaves.
+Below is an example of such a situation.
+%
+\begin{center}
+\begin{tikzpicture}
+\tikzstyle{level 1}=[level distance=10mm,sibling distance=50mm]
+\tikzstyle{level 2}=[level distance=10mm,sibling distance=10mm]
+\tikzstyle{level 2}=[level distance=10mm,sibling distance=15mm]
+  \node {\code{01}}
+    child { node {\code{011}}
+      child {node {\code{0111}}}
+      child {node {\code{0112}}} 
+      child {node {\code{0113}}} }
+    child { node {\code{012}}
+      child {node {\code{0121}}}
+      child {node {\code{0122}}} 
+      child {node {\code{0123}}} 
+      child {node {\code{0124}}
+       child {node {\code{01241}}}
+       child {node {\code{01242}}} } };
+\end{tikzpicture}
+\end{center}
+%
+In this case, not all leaves can be collapsed with the same number of
+collapsing levels. This provides an issue for specifying the collapsing
+sequence as it now depends on the leaf where you start how many collapsing
+levels are possible. It also complicates interpretability of the result as the
+collapsing level reported in the output, now means different things for
+different target groups. The solution chosen in \pkg{accumulate} is to extend
+the tree by making copies of the leaves that are not on the lowest level as
+follows.
+%
+\begin{center}
+\begin{tikzpicture}
+\tikzstyle{level 1}=[level distance=10mm,sibling distance=70mm]
+\tikzstyle{level 2}=[level distance=10mm,sibling distance=20mm]
+\tikzstyle{level 3}=[level distance=10mm,sibling distance=15mm]
+  \node {\code{01}}
+    child { node {\code{011}}
+      child {node {\code{0111}}
+       child {node{\code{0111}}}} 
+      child {node {\code{0112}} 
+       child {node{\code{0112}}}} 
+      child {node {\code{0113}}
+       child {node{\code{0113}}}} } 
+    child { node {\code{012}}
+      child {node {\code{0121}}
+       child {node {\code{0121}}}}
+      child {node {\code{0122}}
+       child {node{\code{0122}}}} 
+      child {node {\code{0123}}
+       child {node{\code{0123}}}} 
+      child {node {\code{0124}}
+       child {node {\code{01241}}}
+       child {node {\code{01242}}} } };
+\end{tikzpicture}
+\end{center}
+%
+The tradeoff is that although there may be some extra calculations in the case
+where a leaf is collapsed to itself. The gain is that the specification of the
+calculation as well as the interpretation of the results are now uniform
+accross all hierarchical classifications. Again, using \code{csh_from_digits()}
+deriving the collapsing scheme can be automated.
+<<>>=
+nace <- c("0111","0112","0113","0121","0122","0123","01241","01242")
+csh_from_digits(nace,levels=3)
+@
+
+
+
+
+
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
