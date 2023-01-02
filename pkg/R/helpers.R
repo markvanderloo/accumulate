@@ -158,11 +158,13 @@ fraction_complete <- function(...){
 #' parents in the hierarchy.
 #'
 #' @param x \code{[character|integer]} labels in a hierarchical classification (lowest level)
-#' @param pad \code{[character]} padding character used for codes shorter than the maximum length.
+#' @param levels \code{[integer]>=0} how many collapsing levels to include. Zero means
+#'        only include the original labels.
 #'
 #' 
 #' @export
-csh_from_digits <- function(x,pad="0"){
+csh_from_digits <- function(x, levels=max(nchar(x))-1){
+  stopifnot(levels>=0)
   x <- as.character(x)
   nlevels <- max(nchar(x))
 
@@ -171,7 +173,7 @@ csh_from_digits <- function(x,pad="0"){
     A[,i] <- substr(x,1,nlevels+1-i)
   }
   colnames(A) <- sprintf("A%d",seq_len(nlevels)-1)
-  as.data.frame(A)
+  as.data.frame(A)[1:(levels+1)]
 }
 
 
