@@ -71,8 +71,7 @@
 #' \code{test}, then for that row, the \code{level} and subsequent columns are
 #' \code{NA}.
 #' 
-#' @seealso \code{\link{demand}}
-#'
+#' 
 #' @examples
 #'
 #' ## Example of data frame defining collapsing scheme, using accumulate

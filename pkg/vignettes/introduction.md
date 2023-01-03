@@ -195,7 +195,7 @@ In this representation is is not possible to use multiple grouping
 variables, unless you combine multiple grouping variables into a single
 one, for example by pasting them together.
 
-The advantage of this representration is that it allows users to externally
+The advantage of this representation is that it allows users to externally
 define a (manually edited) collapsing scheme.
 
 ### Exercises
@@ -207,28 +207,38 @@ define a (manually edited) collapsing scheme.
 
 ## Convenience functions to define tests
 
-The package exports a few functions to make common tests easier to define. We
-already saw `min_records()` in earler examples. There are also functions that
-allow you to define a minimum fraction of complete (partial) records or a
-minumum of _n_ complete (partial) records. See `?min_records` and references
-therein for examples.
+There are several options to define test on groups of records:
+
+1. Use one of the built-in functions to specify common test conditions:
+   `min_records()`, `min_complete()`, or `frac_complete()`.
+2. Use a ruleset defined with the [validate](https://cran.r-project.org/package=validate)
+   package, with the `from_validator()` function.
+3. Write your own custom test function. 
 
 
-The function `demand(...)` can be used to define complicated demands on
-records. For example, suppose we want no more than 50% non-zereo values in
-variable `other` variable and that we have least 5 records for each group.
+Let us look at a small example for each case. For comparison we will
+always test that there are a minimum of five records.
+
 
 ```{.R}
-a <- cumulate(producers, collapse=csh
-     , test = demand(mean(other==0) <= 0.5, length(other) >= 5 )
-     , mean_other = mean(other, na.rm=TRUE))
-head(a)
+# 1. using a helper function
+a <- accumulate(producers, collapse = sbi*size ~ sbi
+               , test = min_records(5)
+               , fun  = mean)
+
+# 2. using a 'validator' object
+rules <- validate::validator(nrow(.) >= 3)
+a <- accumulate(producers, collapse = sbi*size ~ sbi
+               , test = from_validator(rules)
+               , fun  = mean)
+
+# 3. using a custom function
+a <- accumulate(producers, collapse=sbi*size ~ sbi
+               , test = function(d) nrow(d) >= 5
+               , fun  = mean)
 ```
 
-The function `demand` accepts a comma-separated list of boolean expressions
-that use variables in `data`. It returns a function that accepts a subset of
-the input dataset, executes these expressions, and returns `TRUE` if all
-conditions are met and `FALSE` otherwise.
+
 
 ### Exercises
 
