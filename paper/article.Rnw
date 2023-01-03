@@ -533,6 +533,29 @@ csh_from_digits(nace,levels=3)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Specifying tests}
+The \code{test} parameter of \code{cumulate()} and \code{accumulate} accepts a
+function that takes a subset of the data and must returns a boolean. In
+principle this gives users enough flexibility to specify any possible test to
+determine whether a collapsing step is necessary or not. However, the package
+exports a few utility functions that make common test conditions easier to
+express without the need for writing a function. Moreover, to support users
+that are not comfortable with function writing, there is a higher order
+function called \code{demand()} that makes expressing combinations of
+tests easier.
+
+Common test conditions include demanding a minimal number of records, or a
+minimal number or fraction of complete records. These cases can be expressed
+with helper functions.
+%
+\begin{center}
+\begin{tabular}{ll}
+\code{min_records(n,vars)}   & At least $n$ records for variables \code{vars}\\
+\code{min_complete(n,vars)}   & At least $n$ records complete records for variables \code{vars}\\
+\code{frac_complete(r,vars)} & At least $100r$\% complete records for variables \code{vars}\\
+\end{tabular}
+\end{center}
+
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Programming over accumulate }
