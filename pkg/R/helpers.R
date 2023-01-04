@@ -153,9 +153,11 @@ csh_from_digits <- function(x, levels=max(nchar(x))-1){
 #' reports if errors, warnings, or messages occur.
 #'
 #' @param dat an example dataset. For example the full dataset
-#' to be fed into \code{\link{accumulate}} or \code{\link{cumulate}}.
+#'        to be fed into \code{\link{accumulate}} or \code{\link{cumulate}}.
 #' @param test A testing function to be passed as argument to \code{\link{accumulate}}
-#' or \code{\link{cumulate}}.
+#'        or \code{\link{cumulate}}.
+#' @param verbose \code{[logical]} If \code{TRUE}, all results (including
+#'        passed tests) are printed.  If \code{FALSE} only failed tests are printed.
 #' @param halt \code{[logical]} toggle stopping when an error is thrown
 #'
 #' @return \code{NULL}, invisibly. This function has as side-effect that test
@@ -170,28 +172,39 @@ csh_from_digits <- function(x, levels=max(nchar(x))-1){
 #' smoke_test(dat, function(d) sum(d$y > 0, na.rm=TRUE) > 2) # OK
 #'
 #' @export
-smoke_test <- function(dat, test, halt=TRUE){
-  try_this(dat, test, info="full dataset") || !halt || return(invisible())
-  try_this(dat[1,,drop=FALSE], test, info="first record") || !halt || return(invisible())
-  try_this(dat[0,,drop=FALSE], test, info="zero records") || !halt || return(invisible())
+smoke_test <- function(dat, test, verbose=FALSE, halt=TRUE){
+  try_this(dat, test, verbose, info="full dataset") || !halt || return(invisible())
+  try_this(dat[1,,drop=FALSE], test, verbose, info="first record") || !halt || return(invisible())
+  try_this(dat[0,,drop=FALSE], test, verbose, info="zero records") || !halt || return(invisible())
 
   vars <- colnames(dat)
   for (var in vars){
     d <- dat[1,,drop=FALSE]
     d[1,var] <- NA
-    try_this(d, test, info=sprintf("first record and %s is NA",var)) || !halt || return(invisible())
+    try_this(d, test, verbose
+     , info=sprintf("first record and %s is NA",var)) || !halt || return(invisible())
   } 
 
   d <- dat[1,,drop=FALSE]
   d[1,] <- NA
-  try_this(d, test, info="first record and all values NA") || !halt || return(invisiblt()) 
+  try_this(d, test, verbose
+    , info="first record and all values NA") || !halt || return(invisiblt()) 
+
+  for (var in vars){
+    d <- dat
+    d[,var] <- NA
+    try_this(d, test, verbose
+            , info=sprintf("full dataset and %s is NA for all records",var)) || 
+      !halt || return(invisible)
+  }
+
 
   catf("\n")
   invisible(NULL)
  
 }
 
-try_this <- function(d, f, info){
+try_this <- function(d, f, verbose, info){
   msg <- character()
   wrn <- character()
   err <- character()
@@ -202,7 +215,7 @@ try_this <- function(d, f, info){
          )
     , error   = function(e) err <<- append(err, e$message)
   )
-  print(smoke(list(result=out, msg=msg, wrn=wrn, err=err, info=info)))
+  print(smoke(list(result=out, msg=msg, wrn=wrn, err=err, info=info)),verbose=verbose)
   invisible(length(err) == 0)
 }
 
@@ -210,9 +223,9 @@ smoke <- function(x){
   structure(x,class="smoke")
 }
 
-print.smoke <- function(x){
+print.smoke <- function(x, verbose){
   if (isTRUE(x$result)|| isFALSE(x$result)){
-    catf("\nTest with %s: OK", x$info)
+    if(verbose) catf("\nTest with %s: OK", x$info)
   } else {
     rep <- character(0)
     if (length(x$err) == 0){ 
