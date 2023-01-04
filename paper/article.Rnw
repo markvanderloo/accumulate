@@ -591,12 +591,35 @@ my_test <- function(d) nrow(d) >= 3 && sum(d$Y >= 2) >=3
 accumulate(input, collapse = A*B ~ A*B1 + B1, test=my_test, fun=sum)
 @
 
+It is easy to overlook some edge cases when specifying test functions.
+Recall that a test function is required to return \code{TRUE} or \code{FALSE},
+regardless of the data circumstances. The only thing that a test function
+can assume is that the received data set is a subset of records from the
+dataset to be aggregated. As a service to the user, \pkg{accumulate} exports
+a function that checks a test function against common edge cases, including
+the occurrence of missing values, a dataset with zero rows, and the full
+dataset. The smoke test checks whether the output is \code{TRUE} or \code{FALSE}
+under all circumstances and also reports erros, warnings, and messages.
+It accepts a (realistic) dataset and a testing function and prints
+test results to the console.
+<<>>=
+smoke_test(input, my_test)
+@
+By default only failing tests are printed. In this case our test function
+is not robust against missing values for $Y$. This can be remedied
+by adding \code{na.rm=TRUE} to the \code{sum()} in the test function.
+<<>>=
+my_test1 <- function(d) nrow(d) >= 3 && sum(d$Y>=2, na.rm=TRUE) >=3 
+smoke_test(input, my_test1)
+@
+The smoke test is aimed at prevening complicated stack traces when errors occur
+in a call to \code{accumulate()} or \code{cumulate()}.  Users should be aware
+that it does not guarantee correctness of the results, only robustness against
+certain edge cases.
 
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{Programming over accumulate }
-
 \section{Extensive example: economic data} \label{sect:example}
 
 
