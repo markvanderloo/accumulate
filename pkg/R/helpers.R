@@ -188,14 +188,14 @@ smoke_test <- function(dat, test, verbose=FALSE, halt=TRUE){
   d <- dat[1,,drop=FALSE]
   d[1,] <- NA
   try_this(d, test, verbose
-    , info="first record and all values NA") || !halt || return(invisiblt()) 
+    , info="first record and all values NA") || !halt || return(invisible()) 
 
   for (var in vars){
     d <- dat
     d[,var] <- NA
     try_this(d, test, verbose
             , info=sprintf("full dataset and %s is NA for all records",var)) || 
-      !halt || return(invisible)
+      !halt || return(invisible())
   }
 
 

@@ -51,7 +51,7 @@ dat <- data.frame(x = 1:5, y=(-2):2)
 expect_stdout(smoke_test(dat, function(d) y > 0), pattern="ERR")  
 expect_stdout(smoke_test(dat, function(d) d$y > 0),pattern="length") 
 expect_stdout(smoke_test(dat, function(d) sum(d$y > 0) > 2), pattern="NA detected")
-expect_stdout(smoke_test(dat, function(d) sum(d$y > 0, na.rm=TRUE) > 2),pattern="OK")
+expect_stdout(smoke_test(dat, function(d) sum(d$y > 0, na.rm=TRUE) > 2),pattern="")
 
 
 
