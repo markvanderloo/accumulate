@@ -1,12 +1,4 @@
 
-catf  <- function(fmt,...) cat(sprintf(fmt,...))
-stopf <- function(fmt,...) stop(sprintf(fmt,...), call.=FALSE)
-
-last <- function(x) x[length(x)]
-
-complete_cases <- function(d) !Reduce(`|`, lapply(d, is.na))
-
-
 
 #' Demand minimal number of functons
 #' 
@@ -16,6 +8,10 @@ complete_cases <- function(d) !Reduce(`|`, lapply(d, is.na))
 #'
 #' min_records(5)(women)
 #' min_records(200)(women)
+#'
+#' @return a function that accepts a data frame and returns \code{TRUE}
+#'         when the number of records is larger than or equal to \code{n}
+#'         and otherwise \code{FALSE}.
 #'
 #' @family helpers
 #'
@@ -34,6 +30,10 @@ min_records <- function(n){
 #'        a numeric vector with column positions). The indexed columns
 #'        will be testsed for completeness (absence of \code{NA}). Be default
 #'        \code{vars=TRUE} meaning that all columns are taken into account.
+#'
+#' @return a function that accepts a data frame and returns \code{TRUE}
+#'         when the number of complete records is larger than or equal to \code{n}
+#'         and otherwise \code{FALSE}.
 #'
 #' @family helpers
 #'
@@ -59,6 +59,10 @@ min_complete <- function(n, vars=TRUE){
 #'        a numeric vector with column positions). The indexed columns
 #'        will be testsed for completeness (absence of \code{NA}). Be default
 #'        \code{vars=TRUE} meaning that all columns are taken into account.
+#'
+#' @return a function that accepts a data frame and returns \code{TRUE} when the
+#'         fraction of complete records is larger than or equal to \code{n} and
+#'         otherwise \code{FALSE}.
 #'
 #' @family helpers
 #'
@@ -87,6 +91,11 @@ frac_complete <- function(r, vars=TRUE){
 #'
 #' @note
 #' Requires the \code{validate} package to be installed.
+#'
+#' @return a function that accepts a data fram and returns \code{TRUE}
+#'         when the data passes all checks in \code{v} and otherwise
+#'         \code{FALSE}.
+#'
 #'
 #' @references
 #' Mark P. J. van der Loo, Edwin de Jonge (2021). Data Validation
@@ -118,6 +127,10 @@ from_validator <- function(v,...){
 #' @param x \code{[character|integer]} labels in a hierarchical classification (lowest level)
 #' @param levels \code{[integer >=0]} how many collapsing levels to include. Zero means
 #'        only include the original labels.
+#'
+#' @return A data frame where each consecitive pair of columns represents
+#'         one collapsing step induced by the hierarchical classification
+#'         encoded by the digits in \code{x}.
 #'
 #' @examples
 #' # balanced hierarchical classification
