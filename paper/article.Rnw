@@ -621,18 +621,97 @@ certain edge cases.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Extensive example: economic data} \label{sect:example}
+In this section we treat three practical examples using a synthetic
+dataset included with the package.
+<<>>=
+data(producers)
+head(producers)
+@
+This \code{producers} dataset contains synthetic data records of various income
+sources for \Sexpr{nrow(producers)} industrial produces. The records are
+classified into a local version of the NACE classification called \code{sbi}
+and into \code{size} classes with values in $\{5,6,7,8,9\}$. 
+
+\subsection{Small area estimation} 
+Small area estimation (SAE) is a collection of methods that are aimed at
+estimating subpopulation parameters in cases where there the number of
+observations in a subpopulation is so mall that direct estimation leads to
+unacceptable estimation variance. Instead one resorts to indirect estimation,
+meaning that one estimates the parameter for a larger subpopulation that
+includes the target subpopulation. This estimate is then interpreted as an
+estimate for the target subpopulation. Here, we shall be interested in
+estimating the average turnover from industrial activities (\code{industrial})
+by SBI and size class.
+
+In the simplest case, where no auxiliary information is available or used, one
+replaces the estimator of the mean over a subpopulation with the estimator of
+the mean over a larger subpopulation. If we assume that all units in the
+dataset were sampled with equal probability based on a simple random sampling
+design, the mean is estimated with the sample mean. We will demand that there
+are at least ten records for which turnover has been measured. The collapsing
+scheme is given by \code{sbi*size ~ sbi + sbi2 + sbi1} where \code{sbi2} and
+\code{sbi1} are classification by respectively the first two SBI digits and the
+first SBI digit. We first add those variables to the dataset.
+<<>>=
+producers$sbi2 <- substr(producers$sbi,1,2)
+producers$sbi1 <- substr(producers$sbi,1,1)
+head(producers, 3)
+@
+Our test function looks as follows.
+<<>>=
+testfun <- function(d) sum(!is.na(d$industrial)) >= 10
+@
+Using \code{accumulate()} we obtain the means. 
+<<>>=
+a <- cumulate(producers
+             , collapse = sbi*size ~ sbi + sbi2 + sbi1
+             , test = testfun
+             , mean_industrial = mean(industrial, na.rm=TRUE))
+head(a,3)
+@
+
+\subsection{Imputing missing values using SAE and ratio imputation} 
+Our goal in this example is to impute missing values for the \code{industrial}
+variable based on ratio imputation with \code{total} as predictor.  Ratio
+imputation is a method where the imputed value $\hat{y}_i$ for variable $Y$ of
+record $i$ is estimated as $\hat{y_i}=\hat{R}_d x_i$, where $\hat{R}$ is an
+estimate of the ratio between $Y$ and an auxiliary variable $X$ in
+subpopulation $d$. An unbiased estimate for $R_d$ is given by
+$\hat{\bar{Y}}_d/\hat{\bar{X}}_d$ where $\hat{\bar{Y}}_d$ and $\hat{\bar{X}}_d$
+are estimated subpopulation means. 
+
+We use SAE to estimate the subpopulation ratios, and then use the \code{simputation}
+package \citep{loo2022simputation} to impute the missing values. 
+<<>>=
+r <- cumulate(producers
+         , collapse = sbi*size ~ sbi + sbi2 + sbi1
+         , test = testfun
+         , R = mean(industrial, na.rm=TRUE)/mean(total, na.rm=TRUE))
+head(r,3)
+@
+To impute the values, using \code{impute_proxy()} we need to merge the ratios
+with the producers dataset (which automatically happens by SBI and size class).
+<<>>=
+library(simputation)
+dat <- merge(producers, r)
+dat <- impute_proxy(dat, industrial ~ R*total)
+@
+We can inspect the imputed values as follows.
+<<>>=
+iNA <- is.na(producers$industrial)
+head(dat[iNA, c("sbi","size","level","R","industrial","total")])
+@
+From this, we have all the information to interpret the imputed values. For
+example, we see that in record 664, the ratio was estimated after collapsing
+the group $(\texttt{sbi},\texttt{size})=(21122,7)$ to $\texttt{sbi2}=21$ since
+the collapse \code{level} equals 2.
 
 
 \section{Formal descriptions and algorithms}
-In this section we give a formal description of the algorithms. In order to be
-unambiguous and to represent the algorithms compactly, we introduce some
-notation. The notation also makes the pseudocode independent of the
-implementation language used, or how the data is represented. 
-
-We start by giving the algorithm for ordinary split-apply-combine, so it is
-easy to see where the algorithm must be generalized to allow for a collapsing
-scheme.
-
+In this section we give a formal description of the algorithm for aggregation
+with dynamic grouping.  We start by giving an algorithm for ordinary
+split-apply-combine to show where the algorithm must be generalized to allow
+for a collapsing scheme.
 
 \subsection{Split-apply-combine}
 In order to analyse a data set group by group we need to specify a data set, a
@@ -646,8 +725,7 @@ notation. Let $A$ be finite set that has no more elements than $U$, and let $f$
 be a function that takes an element of $U$ and returns a value in $A$. We can
 think of $A$ as a set of group labels, and $f$ as the function that assigns a
 label to each element of $U$. This way, $f$ divides $U$ into non-overlapping
-groups, since every element in $U$ can only get one label.  In formal
-terminology we say that $f:U\to A$ is a \emph{partition} of $U$.
+groups. We say that $f:U\to A$ is a \emph{partition} of $U$.
 
 In this notation, any split-apply-combine operation can be computed with the
 following algorithm.
@@ -658,8 +736,7 @@ following algorithm.
 \SetKwInOut{Input}{Input}\SetKwInOut{Output}{Output}
 \Input{A finite set $U$, an aggregator $\phi: 2^U\to X$, and a partition $f:U\to A$}
 \Output{$R$: the value of $\phi$ for every part of $U$ as a set of pairs $(a,x)\in
-A\times X$ }
-
+        A\times X$ }
 $R = \{\}$\;
 \For{$a\in A$}{
   $d=f^{-1}(\{a\})$\tcp*{get subset of $U$}
@@ -668,16 +745,15 @@ $R = \{\}$\;
 \end{algorithm}
 
 Here, the output is collected in a set $R$ (this set is technically a function
-$A\to X$ since it pairs for each $a\in A$ with one element of $X$). We also
-introduced some new notation: the notation $2^U$ stands for `the set of all
-subsets of $U$'. The notation $f^{-1}$ stands for the formal \emph{inverse} of
-$f$. That is: you give it a set of labels from $A$ and it returns all the
-elements of $U$ that have any of those labels. This definition is slightly too
-general for the current algorithm, but it will come in handy when we move to
-collapsing groups.
+$A\to X$ since it pairs each $a\in A$ with one element of $X$). We also
+introduced some new notation: the notation $2^U$ is the power set of $U$ and
+$f^{-1}$ stands for the formal \emph{inverse} of $f$. That is: you give it a
+set of labels from $A$ and it returns all the elements of $U$ that have any of
+those labels. This definition is somewhat too general for the current
+algorithm, but it will be necessary when we move to collapsing groups.
 
-Let us see how the elements $U$, $f:U\to A$, and $\phi$ are implemented
-in practice. Consider the signature of the R \code{aggregate()} function for data
+Let us see how the elements $U$, $f:U\to A$, and $\phi$ are implemented in
+practice. Consider the signature of the R \code{aggregate()} function for data
 frames (we skip arguments that are not important for the discussion).
 \begin{verbatim}
   aggregate(x, by, FUN)
@@ -720,53 +796,49 @@ U\xrightarrow{f_0}A_0\xrightarrow{f_1}A_1\xrightarrow{f_2}\cdots\xrightarrow{f_n
 A collapsing scheme is a sequence of partitions where each $f_i:A_{i-1}\to A_i$
 partitions $A_{i-1}$ into $|A_i|$ groups. 
 
-Collapsing schemes can be represented as tables. For example, the European NACE
-classification is a hierarchical classification of economic activity. Each
-group is encoded as a 4-digit code where the first digit indicates the highest
-grouping level, and the last digit the most detailed level. This induces a
-collapsing sequence by combining groups that have the same parent in the
-hierarchy. Below is an example, based on a small piece of the NACE code list.
+%Collapsing schemes can be represented as tables. For example, the European NACE
+%classification is a hierarchical classification of economic activity. Each
+%group is encoded as a 4-digit code where the first digit indicates the highest
+%grouping level, and the last digit the most detailed level. This induces a
+%collapsing sequence by combining groups that have the same parent in the
+%hierarchy. Below is an example, based on a small piece of the NACE code list.
+%%
+%\begin{equation}
+%\begin{tabular}{rrr}
+%\hline
+% $A_0$& $A_1$ & $A_2$\\
+%\hline
+%0111&   011 & 01\\
+%0112&   011 & 01\\
+%0113&   011 & 01\\
+%0121&   012 & 01\\
+%0122&   012 & 01\\
+%0123&   012 & 01\\
+%0124&   012 & 01\\
+%\hline
+%\end{tabular}
+%\label{eq:tablerep}
+%\end{equation}
 %
-\begin{equation}
-\begin{tabular}{rrr}
-\hline
- $A_0$& $A_1$ & $A_2$\\
-\hline
-0111&   011 & 01\\
-0112&   011 & 01\\
-0113&   011 & 01\\
-0121&   012 & 01\\
-0122&   012 & 01\\
-0123&   012 & 01\\
-0124&   012 & 01\\
-\hline
-\end{tabular}
-\label{eq:tablerep}
-\end{equation}
+%Here, $A_0$ is the most detailed partition, splitting a dataset into seven
+%groups, relating to $\{0111,\ldots,0124\}$. In $A_1$ there are two groups.
+%The first, labeled $01.1$ is constructed by combining $0111, 0112$ and
+%$0113$ and the second, labeled $01.2$ is constructed by combining
+%$0121,\ldots 01.24$. Finally, in $A_2$ all groups are combined.
+%
+%To compute an aggregate for records labeled with $0111$, the algorithm will
+%select those records and test whether the subset is suitable. If not, it will
+%move to $f_1(0111)=011$ and find all the groups in $A_0$ that map to 011 as
+%follows.
+%\begin{displaymath}
+%f_1^{-1}(\{011\}) = \{0111, 0112, 0113\}.
+%\end{displaymath}
+%It will then move on and find all records labeled with any of those three
+%group labels, and test again. If this new data set is suitable, the result is
+%computed, if not, another collapse takes place. The whole procedure is repeated 
+%for each element in $A_0$.
 
-Here, $A_0$ is the most detailed partition, splitting a dataset into seven
-groups, relating to $\{0111,\ldots,0124\}$. In $A_1$ there are two groups.
-The first, labeled $01.1$ is constructed by combining $0111, 0112$ and
-$0113$ and the second, labeled $01.2$ is constructed by combining
-$0121,\ldots 01.24$. Finally, in $A_2$ all groups are combined.
-
-To compute an aggregate for records labeled with $0111$, the algorithm will
-select those records and test whether the subset is suitable. If not, it will
-move to $f_1(0111)=011$ and find all the groups in $A_0$ that map to 011 as
-follows.
-\begin{displaymath}
-f_1^{-1}(\{011\}) = \{0111, 0112, 0113\}.
-\end{displaymath}
-It will then move on and find all records labeled with any of those three
-group labels, and test again. If this new data set is suitable, the result is
-computed, if not, another collapse takes place. The whole procedure is repeated 
-for each element in $A_0$.
-
-
-
-
-In order to generalize this algorithm towards generic collapsing schemes, we
-introduce the function $F_k:A_0\to A_k$, which accepts a label in $A_0$ and
+Denote with $F_k:A_0\to A_k$, the function that  accepts a label in $A_0$ and
 returns the corresponding label in $A_k$. This can formally be defined as
 consecutive application of $f_1, f_2,\cdots, f_k$ to an element of $A_0$. In
 notation
