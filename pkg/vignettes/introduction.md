@@ -28,7 +28,7 @@ install.packages("accumulate")
 ```
 Next, the package can be loaded. You can use `packageVersion` (from base R) to
 check which version you have installed.
-```{.R}
+```{#load_package .R}
 library(accumulate)
 # check the package version
 packageVersion("accumulate")
@@ -37,7 +37,7 @@ packageVersion("accumulate")
 ## A first example
 
 We will use a built-in dataset as example. 
-```{.R}
+```{#loading_data .R}
 data(producers)
 head(producers)
 ```
@@ -48,7 +48,7 @@ and a `size` class (0-9).
 We wish to find a group mean by `sbi x size`. However, we demand that the group has
 at least five records, otherwise we combine the size classes of a single `sbi` group.
 This can be done as follows.
-```{.R}
+```{#first_example .R}
 a <- accumulate(producers
               , collapse = sbi*size ~ sbi
               , test = min_records(5)
@@ -68,13 +68,13 @@ The accumulate function does the following:
     - If the test is still not satisfied, no computation is possible
       and all outputs are `NA` for the current `sbi` and `size` combination.
  
-Explicitly, for this example we see that for `(sbi,size)==(3410,8)` no
+Explicitly, for this example we see that for `(sbi,size)==(2752,5)` no
 satisfactory group of records was found under the current collapsing scheme.
 Therefore the `level` variable equals `NA` and all aggregated variables are
-missing as well.  For `(sbi,size)==(2524,7)` there are sufficient records, and
+missing as well.  For `(sbi,size)==(22840,7)` there are sufficient records, and
 since `level=0` no collapsing was necessary. For the group
-`(sbi,size)=(34201,7)` there were not enough records to compute a mean, but
-taking all records in `sbb==34201` gave enough records. This is signified by
+`(sbi,size)=(3410,8)` there were not enough records to compute a mean, but
+taking all records in `sbi==3410` gave enough records. This is signified by
 `level=1`, meaning that one collapsing step has taken place (from `sbi x size`
 to `sbi`).
 
@@ -97,7 +97,7 @@ Observe that the accumulate funtion is similar to R's built-in `aggregate` funct
 by design). There is a second function called `cumulate` that has an interface that
 is similar to `dplyr::summarise`.
 
-```{.R}
+```{#cumulate_formula .R}
 a <- cumulate(producers, collapse = sbi*size ~ sbi
       , test = function(d) nrow(d) >= 5
       , mu_industrial = mean(industrial, na.rm=TRUE)
@@ -134,14 +134,14 @@ where longer digit sequences indicate higher level of detail. Hence we can colla
 to lower levels of detail by deleting digits at the end. Let us enrich the
 `producers` dataset with extra grouping levels.
 
-```{.R}
+```{#derive_sbi_levels .R}
 producers$sbi3 <- substr(producers$sbi,1,3)
 producers$sbi2 <- substr(producers$sbi,1,2)
 head(producers,3)
 ```
 
 We can now use a more involved collapsing scheme as follows.
-```{.R}
+```{#accumulate_formula .R}
 a <- accumulate(producers, collapse = sbi*size ~ sbi + sbi3 + sbi2
                , test = min_records(5), fun = mean, na.rm=TRUE)
 head(round(a))
@@ -172,7 +172,7 @@ The package comes with a helper function that creates such a scheme
 from hierarchical classifications that are encoded as digits.
 
 For the `sbi` example we can do the following to derive a collapsing scheme.
-```{.R}
+```{#dataframe_construction .R}
 sbi <- unique(producers$sbi)
 csh <- csh_from_digits(sbi)
 names(csh)[1] <- "sbi"
@@ -184,7 +184,7 @@ the first column matches a column in the data to be agregated.
 Both `cumlate` and `accumulate` accept such a data frame as an argument.
 Here is an example with `cumulate`.
 
-```{.R}
+```{#dataframe_cumulate .R}
 a <- cumulate(producers, collapse = csh, test = function(d) nrow(d) >= 5
        , mu_total = mean(total, na.rm=TRUE)
        , sd_total = sd(total, na.rm=TRUE))
@@ -220,22 +220,54 @@ Let us look at a small example for each case. For comparison we will
 always test that there are a minimum of five records.
 
 
-```{.R}
+```{#helpers .R}
+# load the data again to loose columns 'sbi2' and 'sbi3' and work
+# with the original data.
+data(producers)
+
 # 1. using a helper function
 a <- accumulate(producers, collapse = sbi*size ~ sbi
                , test = min_records(5)
-               , fun  = mean)
+               , fun  = mean, na.rm=TRUE)
 
 # 2. using a 'validator' object
 rules <- validate::validator(nrow(.) >= 3)
 a <- accumulate(producers, collapse = sbi*size ~ sbi
                , test = from_validator(rules)
-               , fun  = mean)
+               , fun  = mean, na.rm=TRUE)
 
 # 3. using a custom function
 a <- accumulate(producers, collapse=sbi*size ~ sbi
                , test = function(d) nrow(d) >= 5
-               , fun  = mean)
+               , fun  = mean, na.rm=TRUE)
+```
+
+### Smoke-testing your test function
+
+If you write your own test function from scratch, it is easy to overlook some
+edge cases like the occurrence of missing data, a column that is completely
+`NA`, or receiving zero records. The function `smoke_test()` accepts a data set
+and a test function and runs the test function on several common edge cases
+based on the dataset. It does _not_ check whether the test function works as
+expected, but it checks that the output is `TRUE` or `FALSE` in all cases and
+reports errors, warnings and mesages if they occur.
+
+
+As an example we construct a test function that checks whether one
+of the variables has sufficient non-zero values.
+```{#smoketest1 .R}
+my_test <- function(d) sum(other != 0) > 3
+smoke_test(producers, my_test)
+```
+Oops, we forgot to refer to the data set. Let's try it again.
+```{#smoketest2 .R}
+my_test <- function(d) sum(d$other != 0) > 3
+smoke_test(producers, my_test)
+```
+Our function is not robust against occurrence of `NA`. Here's a third attempt.
+```{#smoketest3 .R}
+my_test <- function(d) sum(d$other != 0,na.rm=TRUE) > 3
+smoke_test(producers, my_test)
 ```
 
 
