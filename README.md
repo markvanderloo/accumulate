@@ -35,7 +35,7 @@ No guarantees that it will actually build, install, or give correct results.
 
 ## Example
 
-See [the introductory vignette](pkg/vignette/introduction.md).
+See [the introductory vignette](pkg/vignettes/introduction.md).
 
 
 ## Licence
