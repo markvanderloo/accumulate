@@ -2,7 +2,7 @@ Package: accumulate
 Type: Package
 Title: Split-Apply-Combine with Dynamic Groups
 Version: 0.8.0
-Date: 2022-10-29
+Date: 2023-01-20
 Authors@R: c( person("Mark", "van der Loo", role=c("aut","cre")
              , email="mark.vanderloo@gmail.com"
              , comment= c(ORCID="0000-0002-9807-4686")))
