@@ -12,6 +12,7 @@ Description: Estimate group aggregates, where one can set user-defined condition
    a group of records is not suitable, it is expanded using a collapsing scheme
    defined by the user. 
 License: EUPL
+URL: https://github.com/markvanderloo/accumulate
 LazyData: TRUE
 VignetteBuilder: simplermarkdown
 Depends: R (>= 3.5.0)
