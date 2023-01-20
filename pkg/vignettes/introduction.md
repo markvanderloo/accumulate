@@ -112,7 +112,7 @@ Notice that here, we wrote our own test function.
 ### Exercises
 
 1. How many combinations of `(sbi, size)` could not be computed, even when 
-   collapsing to `sbi`?
+   collapsing to `sbi`? (You need to run the code and investigate the output).
 2. Compute the trimmed mean of all numeric variables where you trim
    5% of each side the distribution. See `?mean` on how to compute trimmed
    means.
@@ -274,7 +274,7 @@ smoke_test(producers, my_test)
 
 ### Exercises
 
-1. Compute the mean of all variables using `sbi*size + sbi1 + sbi2` as collapsing
+1. Compute the mean of all variables using `sbi*size ~ sbi1 + sbi2` as collapsing
    scheme. Make sure there are at least 10 records in each group.
 2. Compute the mean of the ratio between `industrial` and `total`, but demand
    that there are not more than 20% zeros in `other`. Use `csh` as collapsing scheme.
