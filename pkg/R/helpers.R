@@ -39,6 +39,10 @@ min_records <- function(n){
 #'
 #' @examples
 #'
+#' f <- min_complete(20)
+#' f(women)  # FALSE (15 records)
+#' f(mtcars) # TRUE (32 records)
+#'
 #' @export
 min_complete <- function(n, vars=TRUE){
   stopifnot(is.numeric(n), n>=0
@@ -67,7 +71,13 @@ min_complete <- function(n, vars=TRUE){
 #' @family helpers
 #'
 #' @examples
-#' 
+#'
+#' f <- frac_complete(0.1)
+#' f(mtcars) # TRUE (all complete)
+#' mt <- mtcars
+#' mt[1:5,1] <- NA
+#' f(mt)     # FALSE (5/32 incomplete)
+#'
 #' @export
 frac_complete <- function(r, vars=TRUE){
   stopifnot(is.numeric(r), 0<=r, r<=1
@@ -104,7 +114,11 @@ frac_complete <- function(r, vars=TRUE){
 #'
 #' @examples
 #'
-#' 
+#' if (requireNamespace("validate", quitetly=TRUE)){
+#'  v <- validator(height >= 0, weight >= 0)
+#'  f <- from_validator(v)
+#'  f(women)  # TRUE (all heights and weights are nonnegative)
+#' }
 #'
 #'
 #' @export
