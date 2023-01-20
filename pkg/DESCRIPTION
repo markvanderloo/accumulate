@@ -1,6 +1,6 @@
 Package: accumulate
 Type: Package
-Title: Split-Apply-Combine with Collapsing Groups
+Title: Split-Apply-Combine with Dynamic Groups
 Version: 0.8.0
 Date: 2022-10-29
 Authors@R: c( person("Mark", "van der Loo", role=c("aut","cre")
@@ -9,7 +9,7 @@ Authors@R: c( person("Mark", "van der Loo", role=c("aut","cre")
 Maintainer: Mark van der Loo <mark.vanderloo@gmail.com>
 Description: Estimate group aggregates, where one can set user-defined conditions
    that the a group of records must satisfy to be suitable for aggregation. If
-   a group of records is not suitable, it is expanded using a 'collapsing scheme'
+   a group of records is not suitable, it is expanded using a collapsing scheme
    defined by the user. 
 License: EUPL
 LazyData: TRUE
