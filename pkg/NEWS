@@ -1,5 +1,6 @@
 version 0.8.1
 - Added URL to description
+- Fixed typo in DESCRIPTION (thanks to CRAN team)
 
 version 0.8.0
-- First CRAN release
+- First CRAN release attempt

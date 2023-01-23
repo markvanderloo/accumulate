@@ -1,14 +1,14 @@
 Package: accumulate
 Type: Package
 Title: Split-Apply-Combine with Dynamic Groups
-Version: 0.8.0
+Version: 0.8.1
 Date: 2023-01-20
 Authors@R: c( person("Mark", "van der Loo", role=c("aut","cre")
              , email="mark.vanderloo@gmail.com"
              , comment= c(ORCID="0000-0002-9807-4686")))
 Maintainer: Mark van der Loo <mark.vanderloo@gmail.com>
 Description: Estimate group aggregates, where one can set user-defined conditions
-   that the a group of records must satisfy to be suitable for aggregation. If
+   that each group of records must satisfy to be suitable for aggregation. If
    a group of records is not suitable, it is expanded using a collapsing scheme
    defined by the user. 
 License: EUPL
