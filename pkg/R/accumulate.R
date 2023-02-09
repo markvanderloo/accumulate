@@ -145,6 +145,7 @@
 #'
 #' @export
 accumulate <- function(data, collapse, test, fun, ...){
+  # poor man's dispatch, on second argument.
   if (inherits(collapse, "data.frame")){
     accumulate1(as.data.frame(data), as.data.frame(collapse), test, fun, ...)
   } else if (inherits(collapse, "formula")){
@@ -158,46 +159,38 @@ accumulate <- function(data, collapse, test, fun, ...){
 
 accumulate1 <- function(data, collapse, test, fun, ...){
 
+
   # Target agregation level
   g  <- colnames(collapse)[1]
   ig <- colnames(data) == g
-  g_type <- last(class(data[,g]))
-
 
   if (!any(ig) ){
     stopf("First column '%s' in 'collapse' is not present in 'data'",g)
   }
-
-
-  collapse <- as.data.frame(lapply(collapse, as.character))
-  data[,g] <- as.character(data[,g])
-  rownames(collapse) <- collapse[,1] # for lookup
-
+  
  
   out <- data.frame(unique(data[,g]), level=NA_integer_) 
   names(out)[1] <- g
-  
   vals <- as.data.frame( matrix(NA, nrow = nrow(out), ncol = sum(!ig)) )
   colnames(vals) <- colnames(data)[!ig]
   out <- cbind(out, vals)
 
+  pullback <- get_pb(collapse, data)
+
   for ( ia in seq_len(nrow(out)) ){
     j = 1
     out_level <- out[ia,1]
-    d <- data[data[,g] == out_level,!ig,drop=FALSE]
+    d <- data[pullback(out_level, j-1), !ig,drop=FALSE]
     while( j < ncol(collapse) && !test(d) ){
       j <- j + 1
-      backmap <- collapse[collapse[,j] == collapse[out_level,j], 1]
-      d <-  data[data[,g] %in% backmap, !ig, drop=FALSE]
+      d <- data[pullback(out_level, j-1), !ig, drop=FALSE]
     }
-
 
     if ( j < length(collapse) || test(d)){
       out[ia, 2]           <- j-1
       out[ia, 3:ncol(out)] <- lapply(d[!ig], fun, ...)
     }
   }
-  out[,1] <- do.call(paste0("as.",g_type), list(out[,1]))
   out
 
 }
@@ -217,15 +210,14 @@ accumulate2 <- function(data, formula, test, fun, ...){
   colnames(vals) <- colnames(data)[data_vars]
   out <- cbind(out, vals)
 
+  pullback <- get_pb(formula, data)
  
   for (ia in seq_len(nrow(out))){
-    d <- merge(data, out[ia,lhs_vars])
-    j = 0
-    rhs_vars <- ""
+    j <- 0
+    d <- data[pullback(out[ia, lhs_vars, drop=FALSE], level = j), , drop=FALSE]
     while(j < length(collapse) && !test(d)){
       j <- j + 1
-      rhs_vars <- all.vars(collapse[[j]])
-      d <- merge(data, d[1, rhs_vars,drop=FALSE])
+      d <- data[pullback(out[ia,lhs_vars,drop=FALSE], level = j), , drop=FALSE]
     }
 
     if ( j < length(collapse) || test(d)){
@@ -262,18 +254,14 @@ cumulate1 <- function(data, collapse, test, ...){
 
   out <- prepare_output_df(collapse, names(exprs))
 
-  rownames(collapse) <- collapse[,1]
-
-  g <- names(collapse)[1]
-  data[,g] <- as.character(data[,g])
+  pullback <- get_pb(collapse, data)
 
   for ( a in collapse[,1]){
-    d <- data[data[,g] == a,]
     j <- 1
+    d <- data[pullback(a,j-1), , drop=FALSE]
     while ( j < ncol(collapse) && !test(d) ){
       j <- j + 1
-      grps <- collapse[collapse[,j] == collapse[a, j],1]
-      d <- data[data[,g] %in% grps, ]
+      d <- data[pullback(a,j-1), , drop=FALSE]
     }
     if ( j < ncol(collapse) || test(d)){
       out[a,2] <- j-1
@@ -298,15 +286,14 @@ cumulate2 <- function(data, formula, test,...){
   colnames(vals) <- names(exprs)
   out <- cbind(out, vals)
 
+  pullback <- get_pb(formula, data)
  
   for (ia in seq_len(nrow(out))){
-    d <- merge(data, out[ia,lhs_vars])
     j = 0
-    rhs_vars <- ""
+    d <- data[pullback(out[ia,lhs_vars,drop=FALSE],j), , drop=FALSE]
     while(j < length(collapse) && !test(d)){
       j <- j + 1
-      rhs_vars <- all.vars(collapse[[j]])
-      d <- merge(data, d[1, rhs_vars,drop=FALSE])
+      d <- data[pullback(out[ia,lhs_vars,drop=FALSE],j), , drop=FALSE]
     }
 
     if ( j < length(collapse) || test(d)){

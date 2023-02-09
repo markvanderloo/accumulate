@@ -187,8 +187,8 @@ concerns between defining collapsing schemes and applying them to data.  The
 package should also support collapsing schemes that follow naturally from
 hierarchical classification systems. Third, users should have the flexibility
 to define any quality requirement on the grouping while common quality
-requiremtns are supported out of the box. Common quality requirements include a
-minimum number of records, or a minum fraction of records without missing
+requirements are supported out of the box. Common quality requirements include a
+minimum number of records, or a minimum fraction of records without missing
 values, or a minimum number of records with non-zero values. 
 
 The rest of this paper is organized as follows. In the next section we formally
@@ -215,7 +215,7 @@ to be simple enough so the whole procedure can be followed in detail.
 We consider a data set with three categorical variables $A$, $B$ and $B_1$, and
 one numerical variable $Y$.  Variable $A$ has levels $\{1, 2,3\}$ and variable
 $B$ is a hierarchical classification with levels $\{11,12,13,21,22\}$. Variable
-$B_1$ is a coursegraining of $B$: for each record the value for $B_1$ is the
+$B_1$ is a course graining of $B$: for each record the value for $B_1$ is the
 first digit of $B$. Hence, $B_1$ has levels $\{1,2\}$. 
 
 Our goal is to compute the sum $t_Y$ over $Y$, grouped by $A\times B$.  We
@@ -270,7 +270,7 @@ Next, we try to compute the total for group $(A=2,B=12)$ (in green) but find
 that there are only two such rows. We now define a new group $(A=2,B_1=1)$ and
 find that there are three records in that group so we get 
 $t_Y=8+16+32=56$.  Similarly, there is only one record with $(A=2,B=13)$. 
-Collapsing groups to $(A=2,B1=1)$, yieds again $t_y=56$.
+Collapsing groups to $(A=2,B1=1)$, yields again $t_y=56$.
 
 Finally, for $(A=2,B=21)$ there is only a single record. Collapsing to
 $(A=2,B1=2)$ yields only two records, so we need to collapse further to $(A=2)$
@@ -296,10 +296,10 @@ Here \texttt{data} is a data frame holding data to be aggregated;
 \texttt{data} and returns a boolean that indicates whether a subset is suited
 for aggregation or not. In \code{accumulate()}, the parameter \code{fun}
 represents an aggregation function that is applied to every column of
-\code{data}, and the ellepsis (\code{...}) is for arguments that are passed as
+\code{data}, and the ellipsis (\code{...}) is for arguments that are passed as
 extra argument to \code{fun}. The interface of \code{accumulate()} is modeled
 after the \code{aggregate()} function in \proglang{R}.  In \code{cumulate}, the
-ellepsis is a sequence of comma-separated \code{name=expression} pairs in the
+ellipsis is a sequence of comma-separated \code{name=expression} pairs in the
 style of \code{summarise()} from the \code{dplyr} package.
 
 The output of both functions are of the same form. The columns of the output
@@ -338,12 +338,12 @@ cumulate(input, collapse = A*B ~ A*B1 + A
 %
 Consider the formula \code{A*B ~ A*B1 + A} in the call to \code{cumulate()}.
 The left-hand-side \code{A*B} is the target output grouping. The
-ritght-hand-side is to be interpreted as the collapsing sequnce: if an instance
+right-hand-side is to be interpreted as the collapsing sequence: if an instance
 of \code{A*B} does not pass the test, then collapse to \code{A*B1}, and if that
 does not pass the test collapse to \code{A}. If this final grouping also does
 not pass the test, the result is \code{NA}.
 
-Summarizing, the formula interface is always of the follwing form.
+Summarizing, the formula interface is always of the following form.
 \begin{verbatim}
   Target grouping ~ Alternative1 + Alternative2 + ... + AlternativeN
 \end{verbatim}
@@ -421,9 +421,9 @@ Statistical Classification of Economic Activities in Europe (NACE, \citet{eu2006
 and the Euroean Skills, Competences, Qualifications and Occupations classification
 (ESCO, \citet{eu2022esco}).
 
-Hierarchical classifications offer a natural mechanism for collapsing fine-graind groupings
-into larger groups because of the parent-child relationships. As an example consider
-a small piece of the NACE classification.
+Hierarchical classifications offer a natural mechanism for collapsing
+fine-grained groupings into larger groups because of the parent-child
+relationships. As an example consider a small piece of the NACE classification.
 
 \begin{center}
 \begin{tikzpicture}
@@ -444,7 +444,7 @@ a small piece of the NACE classification.
 Here, the hierarchy suggest to collapsing $\{0111,0112,0113\}$ into $\{011\}$
 (when needed) and similar for the right branch. The second level of collapsing
 would combine $\{012\}$ with $\{011\}$ into $\{01\}$. The \pkg{accumulate}
-package comes with a helper function that creates the collasping scheme from the
+package comes with a helper function that creates the collapsing scheme from the
 lowest-level digits.
 <<>>=
 nace <- c("0111","0112","0113","0121","0121","0122","0123","0124")
@@ -455,7 +455,7 @@ computed. Since all codes are prepended with zero, there is no need to collapse
 01 any further. The output can be used as argument to the \code{collapse}
 parameter of the \code{accumulate()} or \code{cumulate} functions.
 
-The situation becomes a little more involved when hierarchical classifcations
+The situation becomes a little more involved when hierarchical classifications
 form a tree such that the distance from leave to trunk is not the same for all
 leaves (unbalanced tree). This occurs in practice, for example when local
 organisations create an extra level of detail for some, but not all leaves.
@@ -519,7 +519,7 @@ follows.
 The tradeoff is that although there may be some extra calculations in the case
 where a leaf is collapsed to itself. The gain is that the specification of the
 calculation as well as the interpretation of the results are now uniform
-accross all hierarchical classifications. Again, using \code{csh_from_digits()}
+across all hierarchical classifications. Again, using \code{csh_from_digits()}
 deriving the collapsing scheme can be automated.
 <<>>=
 nace <- c("0111","0112","0113","0121","0122","0123","01241","01242")
@@ -552,7 +552,7 @@ express conditions with the \pkg{validate} package \cite{loo2021data}.  The
 \pkg{validate} packages offers a domain-specific language for expressing,
 manipulating, and investigating conditions on datasets. It's core concept is a
 list of `data validation rules' stored as a \class{validator} object. A
-\class{validator} object is constructed with the enopymous function
+\class{validator} object is constructed with the eponymous function
 \code{validator()}.  For example, to demand that there are at least 3 rows in a
 group, and that there are at least three records where $Y\geq 2$ we create the
 following ruleset.
@@ -573,7 +573,7 @@ head(input, 4)
 @
 We use \code{A*B ~ A*B1 + B1} as collapsing scheme. The function
 \code{from_validator} passes the requirements as a test function to
-\code{accumulate()} (or \code{cumulate()}.
+\code{accumulate()} (or \code{cumulate()}).
 <<>>=
 accumulate(input, collapse = A*B ~ A*B1 + B1,
     test = from_validator(rules), fun=sum)
@@ -599,7 +599,7 @@ dataset to be aggregated. As a service to the user, \pkg{accumulate} exports
 a function that checks a test function against common edge cases, including
 the occurrence of missing values, a dataset with zero rows, and the full
 dataset. The smoke test checks whether the output is \code{TRUE} or \code{FALSE}
-under all circumstances and also reports erros, warnings, and messages.
+under all circumstances and also reports errors, warnings, and messages.
 It accepts a (realistic) dataset and a testing function and prints
 test results to the console.
 <<>>=
@@ -612,7 +612,7 @@ by adding \code{na.rm=TRUE} to the \code{sum()} in the test function.
 my_test1 <- function(d) nrow(d) >= 3 && sum(d$Y>=2, na.rm=TRUE) >=3 
 smoke_test(input, my_test1)
 @
-The smoke test is aimed at prevening complicated stack traces when errors occur
+The smoke test is aimed at preventing complicated stack traces when errors occur
 in a call to \code{accumulate()} or \code{cumulate()}.  Users should be aware
 that it does not guarantee correctness of the results, only robustness against
 certain edge cases.
@@ -890,7 +890,7 @@ suitable dataset. The condition in Line~\ref{line:cond} ensures that if no
 suitable dataset is found after the whole collapsing sequence has been
 executed, then no answer is returned.
 
-\subsection{Performance, memory, paralellization}
+\subsection{Performance, memory, parallelization}
 Both Algorithms~\ref{alg:sac} and \ref{alg:saccg} need only $\mathcal{O}(|U|)$
 memory. The time complexity of Algorithm~\ref{alg:sac} is $\mathcal{O}(|A||U|)$
 ($|A|$ the number of groups occurring in the data, and $|U|$ the number of
@@ -900,7 +900,7 @@ summation or counting, the output can be computed with a single pass through
 $|U|$. \proglang{R} packages such as \pkg{collapse} and \pkg{data.table} have
 implemented specialized low level (\proglang{C}/\proglang{C++}) code for fast
 groupwise aggregation for some commonly occurring aggregating functions.
-Generic paralellization of Algorithm~\ref{alg:sac} can be done by paralellising
+Generic parallelization of Algorithm~\ref{alg:sac} can be done by parallelizing
 over the grouping values $a\in A$: each worker node gets access to a set of
 records corresponding to a single group and computes the local aggregate.
 
@@ -909,9 +909,9 @@ Namely, in the worst case, for each $a\in A_0$ we need to collapse to the
 maximum level $A_n$. This means that for each $a\in A_0$ we need to collapse
 $n$ times, plus the initial attempt of computing aggregate without collapsing.
 The fact that we cannot generically exclude records from a calculation means
-that a generic paralellisation scheme would need to ensure that each worker
+that a generic parallelization scheme would need to ensure that each worker
 node has access to the full dataset $|U|$. There are two types of options to do
-this: either mutliple workers gain read-only access to $U$ or each worker gets
+this: either multliple workers gain read-only access to $U$ or each worker gets
 a copy of $U$. In the first case the workers may suffer from colliding
 read-operations which hampers linear performance improvement as a function of
 the number of workers. In the second case, one needs as many copies of the data
@@ -924,9 +924,9 @@ collapsing.
 
 Summarizing, we see that split-apply-combine with collapsing groups has a
 higher worst-case complexity than regular split-apply-combine. Moreover,
-generic paralellization needs to either consider a specific use case (e.g.
+generic parallelization needs to either consider a specific use case (e.g.
 large or small datasets) or require user input that guides the choice of
-paralellisation scheme.
+parallelization scheme.
 
 
 
