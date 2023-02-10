@@ -15,9 +15,9 @@ collapse <- data.frame(
 
 pullback <- accumulate:::get_pb(collapse, input)
 
-expect_equal(pullback(123,0), 1:3)
-expect_equal(pullback(135, 1), 4:6)
-expect_equal(pullback(212, 2), 7:9)
+expect_equal(pullback(123, 0), input[1:3,])
+expect_equal(pullback(135, 1), input[4:6,])
+expect_equal(pullback(212, 2), input[7:9,])
 
 
 input <- data.frame(
@@ -32,9 +32,9 @@ input$Y2[c(1,4,7)] <- NA
 
 pullback <- accumulate:::get_pb(A*B ~ A*B1 + A, input)
 
-expect_equal(sort(pullback(data.frame(A=1,B=11), level=0)), 1:3)
-expect_equal(sort(pullback(data.frame(A=3,B=21), level=1)), 7:8)
-expect_equal(sort(pullback(data.frame(A=2,B=13), level=2)), 4:6)
+expect_equal(pullback(data.frame(A=1,B=11), level=0), input[1:3,])
+expect_equal(pullback(data.frame(A=3,B=21), level=1), input[7:8,])
+expect_equal(pullback(data.frame(A=2,B=13), level=2), input[4:6,])
 
 
 

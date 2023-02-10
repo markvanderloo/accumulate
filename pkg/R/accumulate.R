@@ -179,11 +179,11 @@ accumulate1 <- function(data, collapse, test, fun, ...){
 
   for ( ia in seq_len(nrow(out)) ){
     j = 1
-    out_level <- out[ia,1]
-    d <- data[pullback(out_level, j-1), !ig,drop=FALSE]
+    out_level <- out[ia,1,drop=FALSE]
+    d <- pullback(out_level, j-1)
     while( j < ncol(collapse) && !test(d) ){
       j <- j + 1
-      d <- data[pullback(out_level, j-1), !ig, drop=FALSE]
+      d <- pullback(out_level, j-1)
     }
 
     if ( j < length(collapse) || test(d)){
@@ -214,10 +214,10 @@ accumulate2 <- function(data, formula, test, fun, ...){
  
   for (ia in seq_len(nrow(out))){
     j <- 0
-    d <- data[pullback(out[ia, lhs_vars, drop=FALSE], level = j), , drop=FALSE]
+    d <- pullback(out[ia, lhs_vars, drop=FALSE], level = j)
     while(j < length(collapse) && !test(d)){
       j <- j + 1
-      d <- data[pullback(out[ia,lhs_vars,drop=FALSE], level = j), , drop=FALSE]
+      d <- pullback(out[ia,lhs_vars,drop=FALSE], level = j)
     }
 
     if ( j < length(collapse) || test(d)){
@@ -258,10 +258,10 @@ cumulate1 <- function(data, collapse, test, ...){
 
   for ( a in collapse[,1]){
     j <- 1
-    d <- data[pullback(a,j-1), , drop=FALSE]
+    d <- pullback(a,j-1)
     while ( j < ncol(collapse) && !test(d) ){
       j <- j + 1
-      d <- data[pullback(a,j-1), , drop=FALSE]
+      d <- pullback(a,j-1)
     }
     if ( j < ncol(collapse) || test(d)){
       out[a,2] <- j-1
@@ -290,10 +290,10 @@ cumulate2 <- function(data, formula, test,...){
  
   for (ia in seq_len(nrow(out))){
     j = 0
-    d <- data[pullback(out[ia,lhs_vars,drop=FALSE],j), , drop=FALSE]
+    d <- pullback(out[ia,lhs_vars,drop=FALSE],j)
     while(j < length(collapse) && !test(d)){
       j <- j + 1
-      d <- data[pullback(out[ia,lhs_vars,drop=FALSE],j), , drop=FALSE]
+      d <- pullback(out[ia,lhs_vars,drop=FALSE],j)
     }
 
     if ( j < length(collapse) || test(d)){
