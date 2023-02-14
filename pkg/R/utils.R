@@ -85,17 +85,21 @@ curry <- function(fun,...){
 
 # Create aggregator function
 # cps: collapsing scheme (data frame or formula)
-# fun: aggregating function
+# x: aggregating function or object of class 'expression'
 # ...: extra arguments to be passed to 'fun'
 #
 # Output:
 # A function that applies f(x, ...) to every non-grouping column
 # x in an input data.frame 
-get_ag <- function(cps, fun, ...){
-  f <- curry(fun, ...)
-  # grouping variables 'gv' are not to be aggregated over
-  gv <- if(inherits(cps,"formula")) all.vars(cps) else colnames(cps)
-  function(dat) sapply(dat[ ,!colnames(dat) %in% gv, drop=FALSE], f)
+get_ag <- function(cps, x, ...){
+  if ( is.function(x) ){
+    f <- curry(x, ...)
+    # grouping variables 'gv' are not to be aggregated over
+    gv <- if(inherits(cps,"formula")) all.vars(cps) else colnames(cps)
+    function(dat) sapply(dat[ ,!colnames(dat) %in% gv, drop=FALSE], f)
+  } else {
+    function(dat) sapply(x, function(e) with(dat,eval(e)))
+  }
 }
 
 

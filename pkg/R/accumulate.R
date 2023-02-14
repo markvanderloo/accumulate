@@ -145,127 +145,44 @@
 #'
 #' @export
 accumulate <- function(data, collapse, test, fun, ...){
-
-  pullback  <- get_pb(collapse, data)
-  jmax      <- jmax(collapse)
-  lhs       <- lhs(collapse)
-
   compute   <- get_ag(collapse, fun, ...)
-
-  out       <- output_backbone(collapse, data)
-  R         <- output_template(nrow(out), collapse, names(data))
-  for ( ia in seq_len(nrow(out)) ){
-    j = 0
-    out_level <- out[ia,lhs,drop=FALSE]
-    d <- pullback(out_level, j)
-    while( j < jmax && !test(d) ){
-      j <- j + 1
-      d <- pullback(out_level, j)
-    }
-    if ( j < jmax || test(d)){
-      R[[ia]] <- compute(d)
-      out$level[ia] <- j
-    }
-  }
-  cbind(out, do.call("rbind", R))
-
+  work(data, collapse, test, compute)
 }
-
-
 
 
 #' @rdname accumulate
 #' @export
 cumulate <- function(data, collapse, test, ...){
-
-  if (inherits(collapse,"data.frame")){
-    cumulate1(as.data.frame(data), as.data.frame(collapse), test, ...)
-  } else if(inherits(collapse,"formula")){
-    cumulate2(as.data.frame(data), collapse, test, ...)
-  } else {
-    stop("Collapse must be a 'data.frame' or a 'formula'")
-  }
+  exprs   <- as.list(substitute(list(...))[-1])
+  compute <- get_ag(collapse, exprs)
+  work(data, collapse, test, compute)
 }
 
 
+work <- function(data, collapse, test, compute){
 
+  pullback  <- get_pb(collapse, data)
+  jmax      <- jmax(collapse)
+  lhs       <- lhs(collapse)
 
-cumulate1 <- function(data, collapse, test, ...){
-  exprs <- as.list(substitute(list(...))[-1])
+  out       <- output_backbone(collapse, data)
+  R         <- output_template(nrow(out), collapse, names(data))
 
-  out <- prepare_output_df(collapse, names(exprs))
-
-  pullback <- get_pb(collapse, data)
-
-  for ( a in collapse[,1]){
-    j <- 1
-    d <- pullback(a,j-1)
-    while ( j < ncol(collapse) && !test(d) ){
+  for ( ia in seq_len(nrow(out)) ){
+    j <- 0
+    out_level <- out[ia,lhs,drop=FALSE]
+    d <- pullback(out_level, j)
+    while ( j < jmax && !test(d) ){
       j <- j + 1
-      d <- pullback(a,j-1)
+      d <- pullback(out_level,j)
     }
-    if ( j < ncol(collapse) || test(d)){
-      out[a,2] <- j-1
-      out[a,3:ncol(out)] <- lapply(exprs, function(e) with(d, eval(e)))
-    }
-  }
-  rownames(out) <- NULL
-  out
-}
-
-cumulate2 <- function(data, formula, test,...){
-  exprs <- as.list(substitute(list(...))[-1])
-
- 
-  collapse <- get_collapse(formula[[3]])
-
-  lhs_vars <- all.vars(formula[[2]])
-  
-  # set up output set
-  out <- cbind(unique(data[lhs_vars]), level=NA_integer_)
-  vals <- as.data.frame(matrix(NA, nrow=nrow(out), ncol=length(exprs)))
-  colnames(vals) <- names(exprs)
-  out <- cbind(out, vals)
-
-  pullback <- get_pb(formula, data)
- 
-  for (ia in seq_len(nrow(out))){
-    j = 0
-    d <- pullback(out[ia,lhs_vars,drop=FALSE],j)
-    while(j < length(collapse) && !test(d)){
-      j <- j + 1
-      d <- pullback(out[ia,lhs_vars,drop=FALSE],j)
-    }
-
-    if ( j < length(collapse) || test(d)){
-      out[ia,length(lhs_vars) + 1] <- j
-      out[ia,(length(lhs_vars)+2):ncol(out)] <- lapply(exprs, function(e) with(d, eval(e)))
+    if ( j < jmax || test(d) ){
+      R[[ia]] <- compute(d)
+      out$level[ia] <- j
     }
   }
-  rownames(out) <- NULL
-  out
-
+  cbind(out, do.call("rbind", R))
 }
-
-prepare_output_df <- function(collapse, outvars){
-
-  collapse <- as.data.frame(lapply(collapse, as.character))
-  out <- data.frame(collapse[,1], NA_integer_, row.names=collapse[,1])
-  colnames(out) <- c(names(collapse)[1], "level")
-  vals <- as.data.frame(matrix(NA, nrow=nrow(out), ncol=length(outvars)))
-  colnames(vals) <- outvars
-  cbind(out, vals)
-
-}
-
-
-get_collapse <- function(e, L = list()){
-  if (length(e) == 1 || e[[1]]=="*") return(append(L, e))
-  c(get_collapse(e[[2]],L), get_collapse(e[[3]],L))
-}
-
-
-
 
 
 

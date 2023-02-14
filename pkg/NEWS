@@ -1,3 +1,6 @@
+vesion 0.8.2
+- Internal: complete code reorganization
+
 version 0.8.1
 - Added URL to description
 - Fixed typo in DESCRIPTION (thanks to CRAN team)
