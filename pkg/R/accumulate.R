@@ -158,11 +158,11 @@ accumulate <- function(data, collapse, test, fun, ...){
     j = 0
     out_level <- out[ia,lhs,drop=FALSE]
     d <- pullback(out_level, j)
-    while( j < jmax-1 && !test(d) ){
+    while( j < jmax && !test(d) ){
       j <- j + 1
       d <- pullback(out_level, j)
     }
-    if ( j < jmax-1 || test(d)){
+    if ( j < jmax || test(d)){
       R[[ia]] <- compute(d)
       out$level[ia] <- j
     }

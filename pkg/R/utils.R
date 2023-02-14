@@ -111,7 +111,7 @@ output_backbone <- function(cps, dat){
 }
 
 jmax <- function(cps){
-  if (inherits(cps,"formula")) length(cps[[3]]) else ncol(cps)
+  if (inherits(cps,"formula")) length(cps[[3]]) else ncol(cps) - 1
 }
 
 lhs <- function(cps) {

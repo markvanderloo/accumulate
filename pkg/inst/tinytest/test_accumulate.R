@@ -29,7 +29,6 @@ out <- accumulate(input, collapse
           , test=function(d) nrow(d) >= 10
           , fun = sum, na.rm=TRUE)
 
-print(out)
 expect_equal(out[,3], rep(NA,7))
 expect_equal(out[,4], rep(NA,7))
 
