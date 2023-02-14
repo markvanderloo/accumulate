@@ -20,9 +20,21 @@ out <- accumulate(input
          , fun  = sum, na.rm=TRUE)
 
 expect_equal(out[,1], unique(collapse[,1]))
-expect_equal(out[,2], c(0, 1 ,  1,  1,   2, 2  , 2))
+expect_equal(out[,2], c(0, 1 ,  1,  1,   2,   2, 2))
 expect_equal(out[,3], c(7, 56, 56, 56, 448, 448, 448))
 expect_equal(out[,4], c(6, 48, 48, 48, 384, 384, 384))
+
+# With NA in result
+out <- accumulate(input, collapse
+          , test=function(d) nrow(d) >= 10
+          , fun = sum, na.rm=TRUE)
+
+print(out)
+expect_equal(out[,3], rep(NA,7))
+expect_equal(out[,4], rep(NA,7))
+
+
+
 
 ## Accumulate with collapsing scheme as formula
 input <- data.frame(

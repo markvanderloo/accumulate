@@ -74,20 +74,57 @@ get_collapse <- function(e, L = list()){
   c(get_collapse(e[[2]],L), get_collapse(e[[3]],L))
 }
 
-# function that retrieves the 
-get_ng <- function(x, dat){
-  if (inherits(x,"formula")){
-    lhs <- all.vars(x[[2]])
-    lbs <- unique(dat[lhs])
-    function(n) lbs[n,,drop=FALSE]
-  } else if (inherits(x, "data.frame")){
-    lbs <- dat[,1]
-    function(n) lbs[n]
+
+curry <- function(fun,...){
+  L <- list(NULL, ...)
+  function(x) {
+    L[[1]] <- x
+    do.call(fun,L)
   }
 }
 
+# Create aggregator function
+# cps: collapsing scheme (data frame or formula)
+# fun: aggregating function
+# ...: extra arguments to be passed to 'fun'
+#
+# Output:
+# A function that applies f(x, ...) to every non-grouping column
+# x in an input data.frame 
+get_ag <- function(cps, fun, ...){
+  f <- curry(fun, ...)
+  # grouping variables 'gv' are not to be aggregated over
+  gv <- if(inherits(cps,"formula")) all.vars(cps) else colnames(cps)
+  function(dat) sapply(dat[ ,!colnames(dat) %in% gv, drop=FALSE], f)
+}
 
 
+# get relevant group combinations
+output_backbone <- function(cps, dat){
+  out <- if (inherits(cps,"formula")){
+    unique(dat[all.vars(cps[[2]])])
+  } else { # cps is a data.frame
+    unique(dat[,names(cps)[1],drop=FALSE])
+  }
+  out$level <- NA_integer_
+  out
+}
+
+jmax <- function(cps){
+  if (inherits(cps,"formula")) length(cps[[3]]) else ncol(cps)
+}
+
+lhs <- function(cps) {
+  if (inherits(cps,"formula")) all.vars(cps[[2]]) else names(cps)[1]
+}
+
+output_template <- function(n, cps, dnames){
+  colvars <- if ( inherits(cps,"formula") ) all.vars(cps) else names(cps)[1]
+  vars <- dnames[!dnames %in% colvars]
+  template <- rep(NA, length(vars))
+  names(template) <- vars
+  lapply(seq_len(n), function(i) template)
+}
 
 
 

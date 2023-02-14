@@ -145,88 +145,29 @@
 #'
 #' @export
 accumulate <- function(data, collapse, test, fun, ...){
-  # poor man's dispatch, on second argument.
-  if (inherits(collapse, "data.frame")){
-    accumulate1(as.data.frame(data), as.data.frame(collapse), test, fun, ...)
-  } else if (inherits(collapse, "formula")){
-    accumulate2(as.data.frame(data), collapse, test, fun, ...)
-  } else {
-    stop("Collapse must be a 'data.frame' or a 'formula'")
-  }
 
-}
+  pullback  <- get_pb(collapse, data)
+  jmax      <- jmax(collapse)
+  lhs       <- lhs(collapse)
 
+  compute   <- get_ag(collapse, fun, ...)
 
-accumulate1 <- function(data, collapse, test, fun, ...){
-
-
-  # Target agregation level
-  g  <- colnames(collapse)[1]
-  ig <- colnames(data) == g
-
-  if (!any(ig) ){
-    stopf("First column '%s' in 'collapse' is not present in 'data'",g)
-  }
-  
- 
-  out <- data.frame(unique(data[,g]), level=NA_integer_) 
-  names(out)[1] <- g
-  vals <- as.data.frame( matrix(NA, nrow = nrow(out), ncol = sum(!ig)) )
-  colnames(vals) <- colnames(data)[!ig]
-  out <- cbind(out, vals)
-
-  pullback <- get_pb(collapse, data)
-
+  out       <- output_backbone(collapse, data)
+  R         <- output_template(nrow(out), collapse, names(data))
   for ( ia in seq_len(nrow(out)) ){
-    j = 1
-    out_level <- out[ia,1,drop=FALSE]
-    d <- pullback(out_level, j-1)
-    while( j < ncol(collapse) && !test(d) ){
+    j = 0
+    out_level <- out[ia,lhs,drop=FALSE]
+    d <- pullback(out_level, j)
+    while( j < jmax-1 && !test(d) ){
       j <- j + 1
-      d <- pullback(out_level, j-1)
+      d <- pullback(out_level, j)
     }
-
-    if ( j < length(collapse) || test(d)){
-      out[ia, 2]           <- j-1
-      out[ia, 3:ncol(out)] <- lapply(d[!ig], fun, ...)
+    if ( j < jmax-1 || test(d)){
+      R[[ia]] <- compute(d)
+      out$level[ia] <- j
     }
   }
-  out
-
-}
-
-
-accumulate2 <- function(data, formula, test, fun, ...){
-
-  collapse <- get_collapse(formula[[3]])
-
-  lhs_vars <- all.vars(formula[[2]])
-  
-  data_vars <- !colnames(data) %in% all.vars(formula)
-
-  # set up output set
-  out <- cbind(unique(data[lhs_vars]), level=NA_integer_)
-  vals <- as.data.frame(matrix(NA, nrow=nrow(out), ncol=sum(data_vars)))
-  colnames(vals) <- colnames(data)[data_vars]
-  out <- cbind(out, vals)
-
-  pullback <- get_pb(formula, data)
- 
-  for (ia in seq_len(nrow(out))){
-    j <- 0
-    d <- pullback(out[ia, lhs_vars, drop=FALSE], level = j)
-    while(j < length(collapse) && !test(d)){
-      j <- j + 1
-      d <- pullback(out[ia,lhs_vars,drop=FALSE], level = j)
-    }
-
-    if ( j < length(collapse) || test(d)){
-      out[ia,length(lhs_vars) + 1] <- j
-      out[ia,(length(lhs_vars)+2):ncol(out)] <- lapply(d[data_vars], fun, ... )
-    }
-  }
-  rownames(out) <- NULL
-  out
+  cbind(out, do.call("rbind", R))
 
 }
 
