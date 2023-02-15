@@ -162,15 +162,15 @@ cumulate <- function(data, collapse, test, ...){
 work <- function(data, collapse, test, compute){
 
   pullback  <- get_pb(collapse, data)
-  jmax      <- jmax(collapse)
-  lhs       <- lhs(collapse)
+  jmax      <- max_collapse(collapse)
+  grpvars   <- groups(collapse)
 
   out       <- output_backbone(collapse, data)
   R         <- output_template(nrow(out), collapse, names(data))
 
   for ( ia in seq_len(nrow(out)) ){
     j <- 0
-    out_level <- out[ia,lhs,drop=FALSE]
+    out_level <- out[ia, grpvars, drop=FALSE]
     d <- pullback(out_level, j)
     while ( j < jmax && !test(d) ){
       j <- j + 1
@@ -297,13 +297,12 @@ output_backbone <- function(cps, dat){
 }
 
 # get maximum number of collapsing steps (base 0).
-jmax <- function(cps){
+max_collapse <- function(cps){
   if (inherits(cps,"formula")) length(cps[[3]]) else ncol(cps) - 1
 }
 
-# Get the 'left-hand-side' these are the desired output level grouping
-# varables. Returns a character vector.
-lhs <- function(cps) {
+# Get the variable names for the desired grouping from the collapsing scheme.
+groups <- function(cps) {
   if (inherits(cps,"formula")) all.vars(cps[[2]]) else names(cps)[1]
 }
 
