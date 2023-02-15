@@ -185,5 +185,140 @@ work <- function(data, collapse, test, compute){
 }
 
 
+##### Entrails ####
+
+# get_pb: create pullback function.
+# x  : formula or data.frame
+# dat: data to create inverse mapping for.
+# out: function accepting a single data frame row with one or more group labels 
+#      and a collapse level. It returns a subset of 'dat'.
+get_pb <- function(x, dat){
+  # Poor man's dispatch since we don't want to export this function
+  t <- last(class(x))
+  switch(t
+    , "data.frame" =  get_pb.data.frame(x,dat)
+    , "formula"    =  get_pb.formula(x, dat)
+    , stop("'x' must be a data frame or a formula")
+  )
+
+}
+
+
+get_pb.data.frame <- function(x, dat){
+  group_labels <- dat[,colnames(x)[1]]
+  rownames(x) <- x[,1]
+  
+  # group: a 1x1 data frame with a single group label 
+  # level: collapse level (column index-1 in x)
+  function(group, level){ 
+    i <- group_labels %in% x[x[,level+1] == x[as.character(unclass(group)), level+1],1]
+    dat[i, , drop=FALSE]
+  }
+
+}
+
+get_pb.formula <- function(x, dat){
+  
+  collapse <- c(x[[2]], get_collapse(x[[3]]))
+
+  labels <- dat[all.vars(x)]
+  # add column with row numbers; make sure column name does not exist already.
+  iname <- "__idx__"
+  n <- 0
+  while( iname %in% names(labels) ){ 
+      n <- n + 1
+      iname <- sprintf("%s%i",iname,n)
+  }
+  labels[,iname] <- seq_len(nrow(labels))
+ 
+  function(group, level){
+    d <- merge(group, labels, by=names(group))
+    collapse_value <- d[1, all.vars(collapse[[level+1]]),drop=FALSE]
+    i <- merge(labels, collapse_value, by=names(collapse_value))[,iname]
+    dat[sort(i),,drop=FALSE]
+  }
+
+}
+
+# Accepts a formula 'e' of the form
+# P1 ~ P2 + P3 + ... + Pn, where each Pj is a single variable
+# name or a product of variable names. 
+# The return value is a list [P2, P3,...,Pn] of subformulae.
+get_collapse <- function(e, L = list()){
+  if (length(e) == 1 || e[[1]]=="*") return(append(L, e))
+  c(get_collapse(e[[2]],L), get_collapse(e[[3]],L))
+}
+
+
+# Ellipsis currying.
+# Accepts a function fun, and returns a 1-argument function
+# that has all arguments in ... fixed.
+curry <- function(fun,...){
+  L <- list(NULL, ...)
+  function(x) {
+    L[[1]] <- x
+    do.call(fun,L)
+  }
+}
+
+# Create aggregator function
+# cps: collapsing scheme (data frame or formula)
+# x: aggregating function or object of class 'expression'
+# ...: extra arguments to be passed to 'x', if it is a function.
+#
+# Output:
+# If x is a function:
+#   A function f(dat,..._ that applies x to every non-grouping column 
+#   in 'dat'  and returs a named vector with results.
+# If x is of type 'expression':
+#   A function f(dat) that evaluates each espression in the context of
+#   dat and returns a named vector with results.
+get_ag <- function(cps, x, ...){
+  if ( is.function(x) ){
+    f <- curry(x, ...)
+    # grouping variables 'gv' are not to be aggregated over
+    gv <- if(inherits(cps,"formula")) all.vars(cps) else colnames(cps)
+    function(dat) sapply(dat[ ,!colnames(dat) %in% gv, drop=FALSE], f)
+  } else {
+    function(dat) sapply(x, function(e) with(dat,eval(e)))
+  }
+}
+
+
+# get relevant group combinations
+output_backbone <- function(cps, dat){
+  out <- if (inherits(cps,"formula")){
+    unique(dat[all.vars(cps[[2]])])
+  } else { # cps is a data.frame
+    unique(dat[,names(cps)[1],drop=FALSE])
+  }
+  out$level <- NA_integer_
+  out
+}
+
+# get maximum number of collapsing steps (base 0).
+jmax <- function(cps){
+  if (inherits(cps,"formula")) length(cps[[3]]) else ncol(cps) - 1
+}
+
+# Get the 'left-hand-side' these are the desired output level grouping
+# varables. Returns a character vector.
+lhs <- function(cps) {
+  if (inherits(cps,"formula")) all.vars(cps[[2]]) else names(cps)[1]
+}
+
+# set up a list where we can store the output aggregate vectors. Seed with 
+# NA's for groups that after jmax collapses do not pass the test (and hence
+# will not yield an aggregate)
+output_template <- function(n, cps, dnames){
+  colvars <- if ( inherits(cps,"formula") ) all.vars(cps) else names(cps)[1]
+  vars <- dnames[!dnames %in% colvars]
+  template <- rep(NA, length(vars))
+  names(template) <- vars
+  lapply(seq_len(n), function(i) template)
+}
+
+
+
 
 
