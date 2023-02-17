@@ -1,4 +1,5 @@
 vesion 0.8.2
+- Package now supports complex objects as aggregation output
 - Internal: complete code reorganization
 
 version 0.8.1
