@@ -184,6 +184,44 @@ work <- function(data, collapse, test, compute){
 }
 
 
+# check if the argument is of a basic R type and of length 1.
+is_scalar <- function(x){
+  length(x) == 1 && (
+  is.numeric(x) || 
+  is.logical(x) || 
+  is.character(x) || 
+  is.factor(x) || 
+  is.ordered(x) || 
+  is.raw(x) || 
+  is.complex(x))
+}
+
+
+# In 'work()', results are created in the form of a list, with one entry
+# per output group. Each entry may be a vector of aggregates, if the aggregates
+# are all 'atomic' and of the same type. Otherwise, each entry is a list.
+# 
+# The purpose of this function is to take such a row-wise list of the form
+# [
+#  [X = x1, Y = y1]
+#  [X = x2, Y = y2]
+# ]
+# to a data.frame of theform
+# X   Y
+# x1  y1
+# x2  y2
+#
+# where the columns may be lists, when the objects in them are more
+# complicated then simple scalars (see is_atomic).
+#
+# Input:
+# backbone: a data.frame where each row contains output group labels
+# results : a list of results per group: nrow(backbone) == length(results)
+# ag      : the agregation function used to create the values in 'results'
+#
+# Output:
+# A data frame, of the form [backbone, results].
+#
 combine <- function(backbone,results, ag){
   # The simple case: aggregates are atomic; this probably covers
   # most cases.
@@ -191,12 +229,21 @@ combine <- function(backbone,results, ag){
     return( cbind(backbone, do.call("rbind", results)) )
   }
 
-  # The complexer case: (some) aggregates are lists.
+  # The complexer case: (some) aggregates are lists. 
   L <- lapply(attr(ag,"outnames"), function(var){
-        sapply(results, function(x) if (var %in% names(x)) x[[var]] else NA )
+    # check if a column can be simplified, if so: do that
+    if ( all(sapply(results, function(x) is_scalar(x[[var]]))) ) {
+      sapply(results, `[[`,var)
+    # otherwise, combine in a list
+    } else {
+      lapply(results, `[[`,var)
+    }
   })
+
   names(L) <- names(results[[1]])
-  L <- lapply(L, function(x) if (!is.list(x)) x else listcol(x))
+  # make listcol objects of columns that are lists, so they are 
+  # printed better.
+  L <- lapply(L, function(x) if (!is.list(x)) x else object_list(x))
   for ( x in names(L) ) backbone[[x]] <- L[[x]]
   backbone
 }

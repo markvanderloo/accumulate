@@ -13,25 +13,25 @@ complete_cases <- function(d) !Reduce(`|`, lapply(d, is.na))
 #' @keywords internal
 #'
 #' @examples
-#' listcol(list(lm(speed ~ dist, data=cars)))
+#' object_list(list(lm(speed ~ dist, data=cars)))
 #'
 #' @export
-listcol <- function(x) structure(x, class=c("listcol","list"))
+object_list <- function(x) structure(x, class=c("object_list","list"))
 
-#' @rdname listcol
+#' @rdname object_list
 #' @export
-format.listcol <- function(x,...){
+format.object_list <- function(x,...){
   sapply(x, function(u) sprintf("<%s>",paste(class(u),collapse=",")))
 }
 
-#' @rdname listcol
+#' @rdname object_list
 #' @export
-print.listcol <- function(x,...) print(format.listcol(x,...))
+print.object_list <- function(x,...) print(format.object_list(x,...))
 
-#' @rdname listcol
+#' @rdname object_list
 #' @export
-`[.listcol` <- function(x,i,j,...,drop=TRUE){
-  listcol(unclass(x)[i])
+`[.object_list` <- function(x,i,j,...,drop=TRUE){
+  object_list(unclass(x)[i])
 }
 
 

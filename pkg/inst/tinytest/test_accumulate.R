@@ -24,7 +24,7 @@ expect_equal(out[,2], c(0, 1 ,  1,  1,   2,   2, 2))
 expect_equal(out[,3], c(7, 56, 56, 56, 448, 448, 448))
 expect_equal(out[,4], c(6, 48, 48, 48, 384, 384, 384))
 
-# With NA in result
+# With NA in result (case where no subset passes test())
 out <- accumulate(input, collapse
           , test=function(d) nrow(d) >= 10
           , fun = sum, na.rm=TRUE)
@@ -32,8 +32,7 @@ out <- accumulate(input, collapse
 expect_equal(out[,3], rep(NA,7))
 expect_equal(out[,4], rep(NA,7))
 
-
-
+ 
 
 ## Accumulate with collapsing scheme as formula
 input <- data.frame(
@@ -93,4 +92,19 @@ out <- cumulate(data=input
         , tY = sum(Y) )
 
 expect_equivalent(out, output)
+
+# Case where the aggregate is an object (not a scalar)
+
+out <- cumulate(data=input
+        , collapse = A*B ~ A*B1 + A
+        , test = function(d) nrow(d) >= 3
+        , model = lm(Y ~ 1)
+        , mean   = mean(Y)
+       )
+
+expect_equivalent(sapply(out$model, coef), out$mean)
+
+
+
+
 
