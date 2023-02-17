@@ -145,7 +145,7 @@
 #'
 #' @export
 accumulate <- function(data, collapse, test, fun, ...){
-  compute   <- get_ag(collapse, fun, ...)
+  compute   <- get_ag(collapse, fun, names(data), ...)
   work(data, collapse, test, compute)
 }
 
@@ -154,7 +154,7 @@ accumulate <- function(data, collapse, test, fun, ...){
 #' @export
 cumulate <- function(data, collapse, test, ...){
   exprs   <- as.list(substitute(list(...))[-1])
-  compute <- get_ag(collapse, exprs)
+  compute <- get_ag(collapse, exprs, names(data))
   work(data, collapse, test, compute)
 }
 
@@ -166,8 +166,7 @@ work <- function(data, collapse, test, compute){
   grpvars   <- groups(collapse)
 
   out       <- output_backbone(collapse, data)
-  R         <- output_template(nrow(out), collapse, names(data))
-
+  R         <- output_template(nrow(out), collapse, compute)
   for ( ia in seq_len(nrow(out)) ){
     j <- 0
     out_level <- out[ia, grpvars, drop=FALSE]
@@ -181,8 +180,27 @@ work <- function(data, collapse, test, compute){
       out$level[ia] <- j
     }
   }
-  cbind(out, do.call("rbind", R))
+  combine(out, R, compute)
 }
+
+
+combine <- function(backbone,results, ag){
+  # The simple case: aggregates are atomic; this probably covers
+  # most cases.
+  if (!any(sapply(results, is.list))){
+    return( cbind(backbone, do.call("rbind", results)) )
+  }
+
+  # The complexer case: (some) aggregates are lists.
+  L <- lapply(attr(ag,"outnames"), function(var){
+        sapply(results, function(x) if (var %in% names(x)) x[[var]] else NA )
+  })
+  names(L) <- names(results[[1]])
+  L <- lapply(L, function(x) if (!is.list(x)) x else listcol(x))
+  for ( x in names(L) ) backbone[[x]] <- L[[x]]
+  backbone
+}
+
 
 
 ##### Entrails ####
@@ -264,6 +282,7 @@ curry <- function(fun,...){
 # Create aggregator function
 # cps: collapsing scheme (data frame or formula)
 # x: aggregating function or object of class 'expression'
+# dnames: names of the input data.frame
 # ...: extra arguments to be passed to 'x', if it is a function.
 #
 # Output:
@@ -273,8 +292,11 @@ curry <- function(fun,...){
 # If x is of type 'expression':
 #   A function f(dat) that evaluates each espression in the context of
 #   dat and returns a named vector with results.
-get_ag <- function(cps, x, ...){
-  if ( is.function(x) ){
+#
+# The output function has an attribute 'outnames' containing 
+# the names of the output variables.
+get_ag <- function(cps, x, dnames, ...){
+  ag <- if ( is.function(x) ){
     f <- curry(x, ...)
     # grouping variables 'gv' are not to be aggregated over
     gv <- if(inherits(cps,"formula")) all.vars(cps) else colnames(cps)
@@ -282,6 +304,11 @@ get_ag <- function(cps, x, ...){
   } else {
     function(dat) sapply(x, function(e) with(dat,eval(e)))
   }
+  outnames <- if (!is.function(x)) names(x)
+              else if (inherits(cps,"formula")) dnames[!dnames %in% all.vars(cps)]
+              else dnames[!dnames %in% names(cps)]
+  attr(ag, "outnames") <- outnames 
+  ag
 }
 
 
@@ -309,10 +336,14 @@ groups <- function(cps) {
 # set up a list where we can store the output aggregate vectors. Seed with 
 # NA's for groups that after jmax collapses do not pass the test (and hence
 # will not yield an aggregate)
-output_template <- function(n, cps, dnames){
-  colvars <- if ( inherits(cps,"formula") ) all.vars(cps) else names(cps)[1]
-  vars <- dnames[!dnames %in% colvars]
-  template <- rep(NA, length(vars))
+# 
+# Input:
+# n       : number of output records
+# cps     : collapsing scheme (formula or data.frame)
+# outnames: column names of output variables
+output_template <- function(n, cps, ag){
+  vars <- attr(ag,"outnames")
+  template <- rep(NA, length(attr(ag,"outnames")))
   names(template) <- vars
   lapply(seq_len(n), function(i) template)
 }
