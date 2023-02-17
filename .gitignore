@@ -50,5 +50,8 @@ README.html
 *.log
 *.out
 *.tex
+*.bbl
+*.blg
+
 
 
