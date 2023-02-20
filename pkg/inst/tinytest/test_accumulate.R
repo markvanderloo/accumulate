@@ -104,6 +104,25 @@ out <- cumulate(data=input
 
 expect_equivalent(sapply(out$model, coef), out$mean)
 
+## test connection with 'validator' 
+if ( !requireNamespace("validate", quietly=TRUE) ){ 
+  exit_file("validate not installed")
+}
+
+rules <- validate::validator(nrow(.) >= 3, sum(Y >= 2) >= 3)
+
+input <- data.frame(
+     A  = c(1,1,1,2,2,2,3,3,3)
+   , B  = c(11,11,11,12,12,13,21,22,12)
+   , B1 = c(1,1,1,1,1,1,2,2,1)
+   , Y  = 2^(0:8)
+)
+
+expect_silent(accumulate(input, collapse = A*B ~ A*B1 + B1,
+    test = from_validator(rules), fun=sum))
+
+
+
 
 
 

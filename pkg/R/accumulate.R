@@ -372,7 +372,7 @@ output_backbone <- function(cps, dat){
 
 # get maximum number of collapsing steps (base 0).
 max_collapse <- function(cps){
-  if (inherits(cps,"formula")) length(cps[[3]]) else ncol(cps) - 1
+  if (inherits(cps,"formula")) length(get_collapse(cps[[3]])) else ncol(cps) - 1
 }
 
 # Get the variable names for the desired grouping from the collapsing scheme.
