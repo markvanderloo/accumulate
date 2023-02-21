@@ -8,6 +8,14 @@
 \usepackage[ruled, linesnumbered]{algorithm2e}
 \usepackage{tikz}
 
+% shortcut for surjection arrow, and surjection version of xrightarrow
+\newcommand{\onto}{\twoheadrightarrow}
+\newcommand\xonto[2][]{%
+  \mathrel{\ooalign{$\xrightarrow[#1\mkern4mu]{#2\mkern4mu}$\cr%
+  \hidewidth$\rightarrow\mkern4mu$}}
+}
+
+
 
 %% new custom commands
 \newcommand{\class}[1]{`\code{#1}'}
@@ -16,7 +24,6 @@
 % This allows referencing institutional authors. 
 % See: https://tex.stackexchange.com/questions/162659/formatting-of-institution-as-author-with-natbib-and-numbered-references
 \newcommand{\xfnm}[1][]{\ifx!#1!\else\unskip,\space#1\fi}
-
 
 
 %% For Sweave-based articles about R packages:
@@ -706,26 +713,33 @@ example, we see that in record 664, the ratio was estimated after collapsing
 the group $(\texttt{sbi},\texttt{size})=(21122,7)$ to $\texttt{sbi2}=21$ since
 the collapse \code{level} equals 2.
 
-
-\section{Formal descriptions and algorithms}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Formal description and algorithms}
 In this section we give a formal description of the algorithm for aggregation
 with dynamic grouping.  We start by giving an algorithm for ordinary
 split-apply-combine to show where the algorithm must be generalized to allow
 for a collapsing scheme.
 
 \subsection{Split-apply-combine}
-In order to analyse a data set group by group we need to specify a data set, a
+To analyse a data set group by group we need to specify a data set, a
 way to split it into groups, and a function that takes a subset of data and
 returns an aggregate. Let us introduce some notation for that.
 
-Let $U$ be a finite set, and let $\phi$ be a function that accepts a subset of
-$U$ and returns a value in some domain $X$. Here, $U$ represents a data set and
-$\phi$ an aggregating function. We split $U$ into groups using the following
-notation. Let $A$ be finite set that has no more elements than $U$, and let $f$
-be a function that takes an element of $U$ and returns a value in $A$. We can
-think of $A$ as a set of group labels, and $f$ as the function that assigns a
-label to each element of $U$. This way, $f$ divides $U$ into non-overlapping
-groups. We say that $f:U\to A$ is a \emph{partition} of $U$.
+Denote with $U$ be a finite set, and and let $\phi:2^U\to X$ be a function that
+accepts a subset of $U$ and returns a value in some domain $X$.  Here, $U$
+represents a data set, $2^U$ its power set, and $\phi$ an aggregating function.
+We split $U$ into groups using the following notation. Let $A$ be finite set
+that has no more elements than $U$, and let $f:\onto A$ be a
+surjective function that takes an element of $U$ and returns a value in $A$. We
+can think of $A$ as a set of group labels, and $f$ as the function that assigns
+a label to each element of $U$. This way, $f$ divides $U$ into non-overlapping
+subsets. We say that $f:U\onto A$ is a \emph{partition} of $U$. We
+also introduce the \emph{pullback along $f$}, $f^*:2^A\to 2^U$ defined as
+%
+\begin{equation*}
+f^*(S) = \{u\in U|f(u)\in S\},
+\end{equation*}
+where $S$ is a subset of $A$ \citep[Section 1.4]{fong2019invitation}.
 
 In this notation, any split-apply-combine operation can be computed with the
 following algorithm.
@@ -734,133 +748,88 @@ following algorithm.
 \caption{Split-Apply-Combine}
 \label{alg:sac}
 \SetKwInOut{Input}{Input}\SetKwInOut{Output}{Output}
-\Input{A finite set $U$, an aggregator $\phi: 2^U\to X$, and a partition $f:U\to A$}
-\Output{$R$: the value of $\phi$ for every part of $U$ as a set of pairs $(a,x)\in
-        A\times X$ }
+\Input{A finite set $U$, an aggregator $\phi: 2^U\to X$, and a partition
+       $f:U\onto A$.}
+\Output{$R$: the value of $\phi$ for every part of $U$ as a set of pairs
+        $(a,x)\in A\times X$. }
 $R = \{\}$\;
 \For{$a\in A$}{
-  $d=f^{-1}(\{a\})$\tcp*{get subset of $U$}
+  $d=f^*(\{a\})$\tcp*{get subset of $U$}
   $R = R\cup \{(a,\phi(d))\}$\tcp*{aggregate and add to result}
 }
 \end{algorithm}
+%
+In this algorithm the output is collected in a set $R$ containing pairs from
+$A\times X$: one pair for each element of $A$. Incidentely, the algorithm can
+be summarized even shorter in this notation as $R=\cup_{a\in A}(a,(\phi\circ
+f^*)(\{a\}))$, where $\circ$ denotes function composition.  Since $f^*$ always
+receives a singleton set, its definition as a function of the powerset of the
+group labels $A$ is too general for this algorithm.  However, this
+generalization turns out to be necessary when generalizing the algorithm to the
+case of dynamic grouping.
 
-Here, the output is collected in a set $R$ (this set is technically a function
-$A\to X$ since it pairs each $a\in A$ with one element of $X$). We also
-introduced some new notation: the notation $2^U$ is the power set of $U$ and
-$f^{-1}$ stands for the formal \emph{inverse} of $f$. That is: you give it a
-set of labels from $A$ and it returns all the elements of $U$ that have any of
-those labels. This definition is somewhat too general for the current
-algorithm, but it will be necessary when we move to collapsing groups.
-
-Let us see how the elements $U$, $f:U\to A$, and $\phi$ are implemented in
-practice. Consider the signature of the R \code{aggregate()} function for data
-frames (we skip arguments that are not important for the discussion).
+It is interesting to see how the elements $U$, $f:U\onto A$, and
+$\phi$ are implemented in practice. Consider the signature of the
+\proglang{R}'s \code{aggregate()} function (we skip arguments that are not
+important for the discussion).
 \begin{verbatim}
   aggregate(x, by, FUN)
 \end{verbatim}
 Here, \code{x} is a data frame where each column is a variable $U$ to be
-aggregated.  The parameter \code{by} represents the record-wise label(s) that
-are used for grouping. So the function $f\to A$ is implemented by forcing the
-user to make sure that the position of each label in \code{by} corresponds to
-the row number in the data frame \code{x}. The argument \code{FUN} is the
-function $\phi$ that aggregates each subset of \code{x}.  Here is an example of how
-a user might call this function from the R prompt.
+aggregated.  The parameter \code{by} is a list of vectors of group labels,
+where each vector has a with a length that equals the number of rows in
+\code{x}. So the function $f:U\onto A$ is implemented by asking
+the user to make sure that the position of each label corresponds to the
+correct row number in the data frame \code{x}. The argument \code{FUN} is the
+function $\phi$ that aggregates each subset of \code{x}.  Here is an example of
+how a user might call this function from the R prompt.
 %
 <<>>=
 aggregate(iris[1:2], by=iris["Species"], FUN=mean)
 @
 %
 Note that the correspondence in position of the \texttt{Species} label and the
-record position is implemented by taking them from the same data frame. The output
-also reveals in the first column the set $A$: each row corresponds to a unique
-value in \texttt{Species} column.
+record position is implemented by taking them from the same data frame. The
+output also reveals in the first column the set $A$: each row corresponds to a
+unique value in \texttt{Species} column.
 
 
 \subsection{Split-apply-combine with collapsing groups}
 \label{sect:saccg}
 The goal of the algorithm is to compute a value for each part of a dataset,
-possibly using values from a larger subset. The input of the algorithm consists
-again of a finite set $U$ and an aggregation function $\phi$ that takes a subset
-of $U$ and returns a value in some domain $X$.  Compared to
-Algorithm~\ref{alg:sac} we need two extra inputs. First, we need a user-defined
-function that checks whether a given subset $d$ of $U$ is suitable for
+possibly using values external to the part. The input of the algorithm consists
+again of a finite set $U$ and an aggregation function $\phi$ that takes a
+subset of $U$ and returns a value in some domain $X$.  Compared to
+Algorithm~\ref{alg:sac} two different inputs are needed. First, a function must
+be defined that that checks whether a given subset $d$ of $U$ is suitable for
 computing $\phi(d)$.  We will call this function $\beta: 2^U\to \mathbb{B}$,
 where $\mathbb{B}=\{\texttt{True},\texttt{False}\}$.  Typical tests are
 checking whether there are sufficient records available, or whether certain
 variables have a low enough fraction of missing values. Second, we need a
 \emph{collapsing scheme}
 \begin{equation}
-U\xrightarrow{f_0}A_0\xrightarrow{f_1}A_1\xrightarrow{f_2}\cdots\xrightarrow{f_n}A_n.
+U\xonto{f_0}A_0\xonto{f_1}A_1\xonto{f_2}\cdots\xonto{f_n}A_n.
 \label{eq:collapsingsequence}
 \end{equation}
 A collapsing scheme is a sequence of partitions where each $f_i:A_{i-1}\to A_i$
 partitions $A_{i-1}$ into $|A_i|$ groups. 
 
-%Collapsing schemes can be represented as tables. For example, the European NACE
-%classification is a hierarchical classification of economic activity. Each
-%group is encoded as a 4-digit code where the first digit indicates the highest
-%grouping level, and the last digit the most detailed level. This induces a
-%collapsing sequence by combining groups that have the same parent in the
-%hierarchy. Below is an example, based on a small piece of the NACE code list.
-%%
-%\begin{equation}
-%\begin{tabular}{rrr}
-%\hline
-% $A_0$& $A_1$ & $A_2$\\
-%\hline
-%0111&   011 & 01\\
-%0112&   011 & 01\\
-%0113&   011 & 01\\
-%0121&   012 & 01\\
-%0122&   012 & 01\\
-%0123&   012 & 01\\
-%0124&   012 & 01\\
-%\hline
-%\end{tabular}
-%\label{eq:tablerep}
-%\end{equation}
-%
-%Here, $A_0$ is the most detailed partition, splitting a dataset into seven
-%groups, relating to $\{0111,\ldots,0124\}$. In $A_1$ there are two groups.
-%The first, labeled $01.1$ is constructed by combining $0111, 0112$ and
-%$0113$ and the second, labeled $01.2$ is constructed by combining
-%$0121,\ldots 01.24$. Finally, in $A_2$ all groups are combined.
-%
-%To compute an aggregate for records labeled with $0111$, the algorithm will
-%select those records and test whether the subset is suitable. If not, it will
-%move to $f_1(0111)=011$ and find all the groups in $A_0$ that map to 011 as
-%follows.
-%\begin{displaymath}
-%f_1^{-1}(\{011\}) = \{0111, 0112, 0113\}.
-%\end{displaymath}
-%It will then move on and find all records labeled with any of those three
-%group labels, and test again. If this new data set is suitable, the result is
-%computed, if not, another collapse takes place. The whole procedure is repeated 
-%for each element in $A_0$.
 
 Denote with $F_k:A_0\to A_k$, the function that  accepts a label in $A_0$ and
-returns the corresponding label in $A_k$. This can formally be defined as
-consecutive application of $f_1, f_2,\cdots, f_k$ to an element of $A_0$. In
-notation
-\begin{equation*}
-F_k \equiv f_k\circ f_{k-1}\circ\cdots\circ f_1.
-\end{equation*}
-Similarly we define $F^{-1}_k:2^{A_k}\to 2^{A_0}$ as the composition
-\begin{equation*}
-F_k^{-1} \equiv f_1^{-1}\circ f_2^{-1}\circ\cdots\circ f_k^{-1}.
-\end{equation*}
-This function asks for a set of labels in $A_k$ and returns all the labels in
-$A_0$ that are mapped to those labels via the collapsing sequence of
-Equation~\eqref{eq:collapsingsequence}.  We are now ready to formally write
-down our main Algorithm~\ref{alg:saccg}.
+returns the corresponding label in $A_k$. In other words, $F_k$ is the
+composition $f_k\circ f_{k-1}\circ\cdots \circ f_1$. Similarly we define the
+pullback along $F_k$ as $F_k^* = f_1^*\circ f_2^*\circ\cdots\circ f_k^*$.  This
+function accepts a set of labels in $A_k$ and returns all the labels in $A_0$
+that are mapped to those labels via the collapsing sequence of
+Equation~\eqref{eq:collapsingsequence}.  With this notation we can define the
+Algorithm for aggregation with dynamic grouping as follows. 
 
-%
 \begin{algorithm}[H]
 \caption{Split-Apply-Combine with Collapsing Groups}
 \label{alg:saccg}
 \SetKwInOut{Input}{Input}\SetKwInOut{Output}{Output}
 \Input{A finite set $U$, an aggregator $\phi: 2^U\to X$, a test function $\beta: 2^U\to \mathbb{B}$,
-      and a collapsing sequence $U\xrightarrow{f_0}A_0\cdots \xrightarrow{f_n}  A_n$}
+      and a collapsing sequence $U\xonto{f_0}A_0\xonto{f_1}\cdots \xonto{f_n}  A_n$}
 
 \Output{$R$: the value of $\phi$ for every part of $U$, for which a suitable
 collapsing group can be found, as a set of triples $(a,k,x)\in A_0\times
@@ -868,12 +837,12 @@ collapsing group can be found, as a set of triples $(a,k,x)\in A_0\times
 
 $R = \{\}$\;
 \For{$a\in A_0$}{
-  $i=0$\;
-  $d = f_0^{-1}(\{a\})$\tcp*{get subset of $U$}
-  \While{$i<n \land \lnot\beta(d)$}{
+  $i=0$ \tcp*{Initiate collapse level}
+  $d = f_0^*(\{a\})$ \tcp*{Get subset of $U$}
+  \While{$i<n \land \lnot\beta(d)$}{ \label{line:while}
     $i = i+1$ \tcp*{Increase collapse level} 
-    $d = (f_0^{-1}\circ F_i^{-1}\circ F_i)(a)$ \tcp*{Collapse and get subset}
-  }
+    $d = (f_0^*\circ F_i^*\circ F_i)(a)$ \tcp*{Collapse and get subset}
+  }\label{line:endwhile}
   \If{$i<n \lor \beta(d)$}{ \label{line:cond}
     $R = R\cup \{(a, i,\phi(d))\}$\;
   } 
@@ -881,14 +850,19 @@ $R = \{\}$\;
 
 \end{algorithm}
 %
-Since the used level of collapsing is determined dynamically by data
-circumstances in $U$, the algorithm also reports the collapsing level used to
-compute a value foe each member of $A_0$. For each member of $A_0$ there is a
-triple $(a,i,\phi(d))$, where $a\in A_0$ is the label to which the value
-$\phi(d)$ pertains, and $i$ is the number of collapses applied to reach a
-suitable dataset. The condition in Line~\ref{line:cond} ensures that if no
-suitable dataset is found after the whole collapsing sequence has been
-executed, then no answer is returned.
+
+In this algorithm the collapsing level $i$ is increased until the test is
+passed or the maximum collapsing level $n$ is reached
+(Lines~\ref{line:while}-\ref{line:endwhile}) %Since the eventual level of
+collapsing is determined dynamically by data %circumstances in $U$, the
+algorithm also reports the collapsing level $i$ used.  The condition in
+Line~\ref{line:cond} ensures that if no suitable dataset is found after the
+whole collapsing sequence has been executed, then no answer is returned. This
+means that in contrast with Algorithm~\ref{alg:sac} there is no guarantee that
+a value for each member of $A_0$ will be found. For each member of $A_0$ where
+an aggregate is computed, there is a triple $(a,i,\phi(d))$, where $a\in A_0$
+is the label to which the value $\phi(d)$ pertains, and $i$ is the number of
+collapses applied to reach a suitable dataset. 
 
 \subsection{Performance, memory, parallelization}
 Both Algorithms~\ref{alg:sac} and \ref{alg:saccg} need only $\mathcal{O}(|U|)$
