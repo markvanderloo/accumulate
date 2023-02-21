@@ -844,7 +844,7 @@ $R = \{\}$\;
     $d = (f^*\circ F_i^*\circ F_i)(a)$ \tcp*{Collapse and get subset}
   }\label{line:endwhile}
   \If{$i<n \lor \beta(d)$}{ \label{line:cond}
-    $R = R\cup \{(a, i,\phi(d))\}$\;
+    $R = R\cup \{(a, i,\phi(d))\}$\; \label{line:R}
   } 
 }
 
@@ -873,7 +873,9 @@ $\Omega(|A|)$ equal to standard split-apply-combine but worst case $O(n|A|)$.
 In fact, the best case for Algorithm~\ref{alg:saccg} is achieved by setting
 $\beta:d\mapsto\texttt{True}$. It is not hard to see that in this case
 Algorithm~\ref{alg:saccg} reduces to Algorithm~\ref{alg:sac}. The worst case is
-achieved by setting $\beta: d\mapsto \texttt{False}$.
+achieved by setting $\beta: d\mapsto \texttt{False}$. In that case the while
+loop in Line~\ref{line:while} is iterated $n-1$ times (yielding total $n$
+executions of $f^*$) while Line~\ref{line:R} is never executed.
 
 
 
