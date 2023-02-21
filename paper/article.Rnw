@@ -761,10 +761,10 @@ $R = \{\}$\;
 %
 In this algorithm the output is collected in a set $R$ containing pairs from
 $A\times X$: one pair for each element of $A$. Incidentely, the algorithm can
-be summarized even shorter in this notation as $R=\cup_{a\in A}(a,(\phi\circ
-f^*)(\{a\}))$, where $\circ$ denotes function composition.  Since $f^*$ always
-receives a singleton set, its definition as a function of the powerset of the
-group labels $A$ is too general for this algorithm.  However, this
+be summarized even shorter in this notation as $R=\cup_{a\in A}\{(a,(\phi\circ
+f^*)(\{a\}))\}$, where $\circ$ denotes function composition.  Since $f^*$
+always receives a singleton set, its definition as a function of the powerset
+of the group labels $A$ is too general for this algorithm.  However, this
 generalization turns out to be necessary when generalizing the algorithm to the
 case of dynamic grouping.
 
@@ -808,18 +808,18 @@ checking whether there are sufficient records available, or whether certain
 variables have a low enough fraction of missing values. Second, we need a
 \emph{collapsing scheme}
 \begin{equation}
-U\xonto{f_0}A_0\xonto{f_1}A_1\xonto{f_2}\cdots\xonto{f_n}A_n.
+U\xonto{f}A\xonto{f_1}A_1\xonto{f_2}\cdots\xonto{f_n}A_n.
 \label{eq:collapsingsequence}
 \end{equation}
-A collapsing scheme is a sequence of partitions where each $f_i:A_{i-1}\to A_i$
-partitions $A_{i-1}$ into $|A_i|$ groups. 
+A collapsing scheme is a sequence of partitions where each $f_i$ partitions its
+domain in $|A_i|$ groups while $f$ partitions $U$ in $|A|$ groups.
 
 
-Denote with $F_k:A_0\to A_k$, the function that  accepts a label in $A_0$ and
+Denote with $F_k:A\to A_k$, the function that  accepts a label in $A$ and
 returns the corresponding label in $A_k$. In other words, $F_k$ is the
 composition $f_k\circ f_{k-1}\circ\cdots \circ f_1$. Similarly we define the
 pullback along $F_k$ as $F_k^* = f_1^*\circ f_2^*\circ\cdots\circ f_k^*$.  This
-function accepts a set of labels in $A_k$ and returns all the labels in $A_0$
+function accepts a set of labels in $A_k$ and returns all the labels in $A$
 that are mapped to those labels via the collapsing sequence of
 Equation~\eqref{eq:collapsingsequence}.  With this notation we can define the
 Algorithm for aggregation with dynamic grouping as follows. 
@@ -829,19 +829,19 @@ Algorithm for aggregation with dynamic grouping as follows.
 \label{alg:saccg}
 \SetKwInOut{Input}{Input}\SetKwInOut{Output}{Output}
 \Input{A finite set $U$, an aggregator $\phi: 2^U\to X$, a test function $\beta: 2^U\to \mathbb{B}$,
-      and a collapsing sequence $U\xonto{f_0}A_0\xonto{f_1}\cdots \xonto{f_n}  A_n$}
+      and a collapsing sequence $U\xonto{f}A\xonto{f_1}A_1\xonto{f_2}\cdots \xonto{f_n}  A_n$.}
 
 \Output{$R$: the value of $\phi$ for every part of $U$, for which a suitable
-collapsing group can be found, as a set of triples $(a,k,x)\in A_0\times
+collapsing group can be found, as a set of triples $(a,k,x)\in A\times
 \underline{n}\times X $ where $\underline{n}=\{0,1,\ldots,n\}$.}
 
 $R = \{\}$\;
-\For{$a\in A_0$}{
+\For{$a\in A$}{
   $i=0$ \tcp*{Initiate collapse level}
-  $d = f_0^*(\{a\})$ \tcp*{Get subset of $U$}
+  $d = f^*(\{a\})$ \tcp*{Get subset of $U$}
   \While{$i<n \land \lnot\beta(d)$}{ \label{line:while}
     $i = i+1$ \tcp*{Increase collapse level} 
-    $d = (f_0^*\circ F_i^*\circ F_i)(a)$ \tcp*{Collapse and get subset}
+    $d = (f^*\circ F_i^*\circ F_i)(a)$ \tcp*{Collapse and get subset}
   }\label{line:endwhile}
   \If{$i<n \lor \beta(d)$}{ \label{line:cond}
     $R = R\cup \{(a, i,\phi(d))\}$\;
@@ -859,48 +859,22 @@ algorithm also reports the collapsing level $i$ used.  The condition in
 Line~\ref{line:cond} ensures that if no suitable dataset is found after the
 whole collapsing sequence has been executed, then no answer is returned. This
 means that in contrast with Algorithm~\ref{alg:sac} there is no guarantee that
-a value for each member of $A_0$ will be found. For each member of $A_0$ where
-an aggregate is computed, there is a triple $(a,i,\phi(d))$, where $a\in A_0$
+a value for each member of $A$ will be found. For each member of $A$ where
+an aggregate is computed, there is a triple $(a,i,\phi(d))$, where $a\in A$
 is the label to which the value $\phi(d)$ pertains, and $i$ is the number of
 collapses applied to reach a suitable dataset. 
 
-\subsection{Performance, memory, parallelization}
-Both Algorithms~\ref{alg:sac} and \ref{alg:saccg} need only $\mathcal{O}(|U|)$
-memory. The time complexity of Algorithm~\ref{alg:sac} is $\mathcal{O}(|A||U|)$
-($|A|$ the number of groups occurring in the data, and $|U|$ the number of
-records) but the actual running time is also determined by the form of the
-aggregating function $\phi$.  For simple aggregating functions such as
-summation or counting, the output can be computed with a single pass through
-$|U|$. \proglang{R} packages such as \pkg{collapse} and \pkg{data.table} have
-implemented specialized low level (\proglang{C}/\proglang{C++}) code for fast
-groupwise aggregation for some commonly occurring aggregating functions.
-Generic parallelization of Algorithm~\ref{alg:sac} can be done by parallelizing
-over the grouping values $a\in A$: each worker node gets access to a set of
-records corresponding to a single group and computes the local aggregate.
 
-Algorithm~\ref{alg:saccg} has time complexity of $\mathcal{O}((n+1)|A_0||U|)$,
-Namely, in the worst case, for each $a\in A_0$ we need to collapse to the
-maximum level $A_n$. This means that for each $a\in A_0$ we need to collapse
-$n$ times, plus the initial attempt of computing aggregate without collapsing.
-The fact that we cannot generically exclude records from a calculation means
-that a generic parallelization scheme would need to ensure that each worker
-node has access to the full dataset $|U|$. There are two types of options to do
-this: either multliple workers gain read-only access to $U$ or each worker gets
-a copy of $U$. In the first case the workers may suffer from colliding
-read-operations which hampers linear performance improvement as a function of
-the number of workers. In the second case, one needs as many copies of the data
-as there are threads. It is possible to compute beforehand whether the dataset
-can be split into subsets that can be treated independently by determining all
-the collapsed subsets. However, this is almost as expensive as running the
-algorithm completely since it only skips the calculation of aggregates after
-collapsing. 
+Comparing Algorithms~\ref{alg:sac} and~\ref{alg:saccg}, we see that the
+standard split-apply-combine algorithm has worst-case runtime complexity
+$O(|A|)$, which is equal to the best case $\Omega(|A|)$. The
+split-apply-combine with collapsing groups algorithm has best case
+$\Omega(|A|)$ equal to standard split-apply-combine but worst case $O(n|A|)$.
+In fact, the best case for Algorithm~\ref{alg:saccg} is achieved by setting
+$\beta:d\mapsto\texttt{True}$. It is not hard to see that in this case
+Algorithm~\ref{alg:saccg} reduces to Algorithm~\ref{alg:sac}. The worst case is
+achieved by setting $\beta: d\mapsto \texttt{False}$.
 
-
-Summarizing, we see that split-apply-combine with collapsing groups has a
-higher worst-case complexity than regular split-apply-combine. Moreover,
-generic parallelization needs to either consider a specific use case (e.g.
-large or small datasets) or require user input that guides the choice of
-parallelization scheme.
 
 
 
