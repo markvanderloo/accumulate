@@ -644,11 +644,11 @@ Small area estimation (SAE) is a collection of methods that are aimed at
 estimating subpopulation parameters in cases where there the number of
 observations in a subpopulation is so mall that direct estimation leads to
 unacceptable estimation variance. Instead one resorts to indirect estimation,
-meaning that one estimates the parameter for a larger subpopulation that
-includes the target subpopulation. This estimate is then interpreted as an
-estimate for the target subpopulation. Here, we shall be interested in
-estimating the average turnover from industrial activities (\code{industrial})
-by SBI and size class.
+meaning that one estimates parameters for a larger subpopulation which are then
+used in the estimate for the target subpopulation.  Here, we shall be
+interested in estimating the average turnover from industrial activities
+(\code{industrial}) by SBI and size class.
+
 
 In the simplest case, where no auxiliary information is available or used, one
 replaces the estimator of the mean over a subpopulation with the estimator of
