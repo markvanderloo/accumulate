@@ -1,0 +1,116 @@
+\documentclass[fleqn,11pt]{article}
+\usepackage{amsmath, amssymb}
+\title{notes}
+
+\begin{document}
+\subsection*{Notation}
+Given a finite population $U=\{1,2,\ldots, N\}$ partitioned in domains
+$\{D_i\}_{i=1}^M$, of sizes $N_i$.  Draw a sample $S\subseteq U$ of size
+$n$ uniformly without replacement from $U$. We have
+
+$$
+\mathbb{P}(j\in S) = \frac{n}{N}\textrm{ for all } j\in U.
+$$
+
+Assume we measure a variable $Y$ with realisations $\{y_j|j\in S\}$. We shall
+be interested in estimating the population total $t_Y$, the population mean
+$\mu_Y$ and the totals and means for each domain, denoted $t_{Y|i}$ and $\mu_{Y|i}$
+respectively.
+
+\subsection*{Horwitz-Thomson estimation}
+The Horwitz-Thomson estimator for the population total is defined as
+$$
+\hat{t}^{\textrm{HT}}_Y = \sum_{j\in S} \frac{1}{\mathbb{P}(j\in S)}y_j
+=\sum_{j\in S}\frac{N}{n}y_j = N\bar{y},
+$$
+where $\bar{y}$ is the sample mean of $Y$.  The HT estimator for a domain $D_i$
+is given by
+$$
+\hat{t}_{Y|i}^{\textrm{HT}} = \sum_{j\in S_i}\frac{N}{n}y_j,\textrm{ with } S_i=D_i\cap S.
+$$
+This estimator has the property that
+$\sum_{i=1}^M\hat{t}_{Y|i}^{\textrm{HT}}=\hat{t}_{Y}^{\textrm{HT}}$, or more
+generally, for any $L\subseteq \{1,2,\ldots,M\}$ we have the additivity
+property $\hat{t}^{\textrm{HT}}_{Y|L} = \sum_{l\in
+L}\hat{t}^{\textrm{HT}}_{Y|l}$.
+
+
+For the corresponding estimator of the population mean we get the following.
+$$
+\hat{\mu}_{Y}^{\textrm{HT}} = \frac{1}{N}\hat{t}^{\textrm{HT}}_Y = 
+\frac{1}{n}\sum_{j\in S}y_j = \bar{y}.
+$$
+For the domain means we define
+$$
+\hat{\mu}_{Y|i}^{\textrm{HT}} = \frac{1}{N_i}\hat{t}^{\textrm{HT}}_{Y|i}
+= \frac{N}{N_i n}\sum_{j\in S_i}y_j.
+$$
+We can rewrite this by observing that $\mathbb{E}(n_i)=\frac{N_in}{N}$ to get
+$$
+\hat{\mu}_{Y|i}^{\textrm{HT}} = \frac{1}{\mathbb{E}(n_i)}\sum_{j\in S_i}y_j
+=\frac{n_i}{\mathbb{E}(n_i)}\bar{y}_i,
+$$
+where $\bar{y}_i$ is the sample mean of $Y$ observed in $S_i$.
+
+\subsection*{The BARE estimator for undersampled domains}
+In cases where $n_i$ is small, the estimation variance may be unacceptably
+large.  A variance-bias tradeoff can be made by including units outside $S_i$
+in the estimates for $S_i$. This is called \emph{Small Area Estimation} (SAE).
+In SAE jargon, this is called `borrowing statistical strength' from other
+domains.
+
+One of the simplest estimators is the Broader Area Ratio Estimator (BARE). The
+idea is to estimate the total for a broader domain that includes $D_i$ and then
+disaggregate the total proportional to the domain size $N_i$. Choosing the
+whole population $U$ for the broader we get the following.
+$$
+\hat{t}^{\textrm{BARE}}_Y = \frac{N_i}{N}\hat{t}^{\textrm{HT}}_Y = N_i\bar{y}.
+$$
+(Note that $\hat{y}$ is the mean, taken over the whole sample $S$). And for the
+mean:
+$$
+\hat{\mu}^{\textrm{BARE}}_Y  = \frac{1}{N_i}\hat{t}^{\textrm{BARE}}_Y  = \bar{y}.
+$$
+Thus, the BARE estimator for $\mu_{Y|i}$ for a domain $i$ is given by the
+estimated mean of the population.
+
+More generally, suppose that $L\subseteq \{1,2,\ldots,M\}$; choose a $D_i$
+with $i\in L$, and write $S_L = \cup_{l\in L}{S_l}$, then
+%
+$$
+\hat{t}^{\textrm{BARE}}_{Y|i}(L) 
+= \frac{N_i}{N_L}\hat{t}^{\textrm{HT}}_{Y|L}
+=\frac{N_i}{N_L}\sum_{j\in S_L}\frac{N}{n}y_l 
+= \frac{N}{N_L n}N_i n_L\bar{y}_L.
+$$ 
+Noting furthermore that $\mathbb{E}(n_L)=N_Ln/N$ we get
+$$
+\hat{t}^{\textrm{BARE}}_{Y|i}(L)= N_i\frac{n_L}{\mathbb{E}(n_L)}\bar{y}_L,
+= N_i \hat{\mu}^{\textrm{HT}}_{Y|L}.
+$$
+Finally, we get for the mean
+$$
+\hat{\mu}^{\textrm{BARE}}_{Y|i}(L) 
+= \frac{1}{N_i}\hat{t}^{\textrm{BARE}}_{Y|i}(L)
+= \hat{\mu}^{\textrm{HT}}_{Y|L}
+$$
+
+If we assume the approximation $n_L/\frac{\mathbb{E}(n_L}\approx 1$ we 
+get
+$$
+\hat{\mu}^{\textrm{BARE}}_{Y|i}(L)\approx \bar{y}_L.
+$$
+
+
+
+
+
+
+
+
+
+
+
+
+
+\end{document}
