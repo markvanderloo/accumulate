@@ -418,6 +418,96 @@ accumulate(input1, collapse=csh, test = min_records(3), sum)
 cumulate(input1, collapse=csh, test=min_records(3), tY=sum(Y), tY2 = sum(Y2))
 @
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Specifying tests}
+The \code{test} parameter of \code{cumulate()} and \code{accumulate} accepts a
+function that takes a subset of the data and must returns a boolean. For common
+test conditions, including requiring a minimal number of records, or a minimal
+number or fraction of complete records there are helper functions available.
+%
+\begin{center}
+\begin{tabular}{lp{9cm}}
+\code{min_records(n)}        & At least $n$ records.\\ 
+\code{min_complete(n,vars)}  & At least $n$ records complete for variables \code{vars}.\\
+\code{frac_complete(r,vars)} & At least $100r$\% complete records for variables \code{vars}.\\
+\code{from_validator(v,...)} & Construct a testing function from a \code{validator} object
+                               of \proglang{R} package \pkg{validate}.\\
+\end{tabular}
+\end{center}
+%
+Second, for multiple, possibly complex requirements on variables users can
+express conditions with the \pkg{validate} package \cite{loo2021data}.  The
+\pkg{validate} packages offers a domain-specific language for expressing,
+manipulating, and investigating conditions on datasets. It's core concept is a
+list of `data validation rules' stored as a \class{validator} object. A
+\class{validator} object is constructed with the eponymous function
+\code{validator()}.  For example, to demand that there are at least 3 rows in a
+group, and that there are at least three records where $Y\geq 2$ we create the
+following ruleset.
+<<>>=
+library(validate)
+rules <- validator(nrow(.) >= 3, sum(Y >= 2) >= 3)
+rules
+@
+Here the \code{.} refers to the dataset as a whole, while rules that can be
+evaluated within the dataset can be written as boolean \proglang{R}
+expressions.
+
+We will apply these conditions to the \code{input} dataset that was 
+constructed in Section~\ref{sect:formula}. As a reminder we print
+the first few records.
+<<>>=
+head(input, 4)
+@
+We use \code{A*B ~ A*B1 + B1} as collapsing scheme. The function
+\code{from_validator} passes the requirements as a test function to
+\code{accumulate()} (or \code{cumulate()}).
+<<>>=
+accumulate(input, collapse = A*B ~ A*B1 + B1,
+    test = from_validator(rules), fun=sum)
+@
+Note that for target groups $(A=2,B=21)$ and $(A=2,B=22)$ none of the available
+collapsing levels lead to a group that satisfied all conditions. Therefore the
+collapsing level and output variables are all missing (\code{NA}).
+
+The third and most flexible way for users to express tests is to write a custom
+testing function. The requirements are that it must work on any subset of a
+data frame, including a dataset with zero rows. The previous example can
+thus also be expressed as follows.
+<<>>=
+my_test <- function(d) nrow(d) >= 3 && sum(d$Y >= 2) >=3
+accumulate(input, collapse = A*B ~ A*B1 + B1, test=my_test, fun=sum)
+@
+
+It is easy to overlook some edge cases when specifying test functions.
+Recall that a test function is required to return \code{TRUE} or \code{FALSE},
+regardless of the data circumstances. The only thing that a test function
+can assume is that the received data set is a subset of records from the
+dataset to be aggregated. As a service to the user, \pkg{accumulate} exports
+a function that checks a test function against common edge cases, including
+the occurrence of missing values, a dataset with zero rows, and the full
+dataset. The smoke test checks whether the output is \code{TRUE} or \code{FALSE}
+under all circumstances and also reports errors, warnings, and messages.
+It accepts a (realistic) dataset and a testing function and prints
+test results to the console.
+<<>>=
+smoke_test(input, my_test)
+@
+By default only failing tests are printed. In this case our test function
+is not robust against missing values for $Y$. This can be remedied
+by adding \code{na.rm=TRUE} to the \code{sum()} in the test function.
+<<>>=
+my_test1 <- function(d) nrow(d) >= 3 && sum(d$Y>=2, na.rm=TRUE) >=3 
+smoke_test(input, my_test1)
+@
+The smoke test is aimed at preventing complicated stack traces when errors occur
+in a call to \code{accumulate()} or \code{cumulate()}.  Users should be aware
+that it does not guarantee correctness of the results, only robustness against
+certain edge cases.
+
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Balanced and unbalanced hierarchical classifications}
 Hierarchical classifications are abundant in (official) statistics.
@@ -539,92 +629,6 @@ csh_from_digits(nace,levels=3)
 
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{Specifying tests}
-The \code{test} parameter of \code{cumulate()} and \code{accumulate} accepts a
-function that takes a subset of the data and must returns a boolean. For common
-test conditions, including requiring a minimal number of records, or a minimal
-number or fraction of complete records there are helper functions available.
-%
-\begin{center}
-\begin{tabular}{ll}
-\code{min_records(n)}        & At least $n$ records.\\ 
-\code{min_complete(n,vars)}  & At least $n$ records complete records for variables \code{vars}.\\
-\code{frac_complete(r,vars)} & At least $100r$\% complete records for variables \code{vars}.\\
-\end{tabular}
-\end{center}
-
-Second, for multiple, possibly complex requirements on variables users can
-express conditions with the \pkg{validate} package \cite{loo2021data}.  The
-\pkg{validate} packages offers a domain-specific language for expressing,
-manipulating, and investigating conditions on datasets. It's core concept is a
-list of `data validation rules' stored as a \class{validator} object. A
-\class{validator} object is constructed with the eponymous function
-\code{validator()}.  For example, to demand that there are at least 3 rows in a
-group, and that there are at least three records where $Y\geq 2$ we create the
-following ruleset.
-<<>>=
-library(validate)
-rules <- validator(nrow(.) >= 3, sum(Y >= 2) >= 3)
-rules
-@
-Here the \code{.} refers to the dataset as a whole, while rules that can be
-evaluated within the dataset can be written as boolean \proglang{R}
-expressions.
-
-We will apply these conditions to the \code{input} dataset that was 
-constructed in Section~\ref{sect:formula}. As a reminder we print
-the first few records.
-<<>>=
-head(input, 4)
-@
-We use \code{A*B ~ A*B1 + B1} as collapsing scheme. The function
-\code{from_validator} passes the requirements as a test function to
-\code{accumulate()} (or \code{cumulate()}).
-<<>>=
-accumulate(input, collapse = A*B ~ A*B1 + B1,
-    test = from_validator(rules), fun=sum)
-@
-Note that for target groups $(A=2,B=21)$ and $(A=2,B=22)$ none of the available
-collapsing levels lead to a group that satisfied all conditions. Therefore the
-collapsing level and output variables are all missing (\code{NA}).
-
-The third and most flexible way for users to express tests is to write a custom
-testing function. The requirements are that it must work on any subset of a
-data frame, including a dataset with zero rows. The previous example can
-thus also be expressed as follows.
-<<>>=
-my_test <- function(d) nrow(d) >= 3 && sum(d$Y >= 2) >=3
-accumulate(input, collapse = A*B ~ A*B1 + B1, test=my_test, fun=sum)
-@
-
-It is easy to overlook some edge cases when specifying test functions.
-Recall that a test function is required to return \code{TRUE} or \code{FALSE},
-regardless of the data circumstances. The only thing that a test function
-can assume is that the received data set is a subset of records from the
-dataset to be aggregated. As a service to the user, \pkg{accumulate} exports
-a function that checks a test function against common edge cases, including
-the occurrence of missing values, a dataset with zero rows, and the full
-dataset. The smoke test checks whether the output is \code{TRUE} or \code{FALSE}
-under all circumstances and also reports errors, warnings, and messages.
-It accepts a (realistic) dataset and a testing function and prints
-test results to the console.
-<<>>=
-smoke_test(input, my_test)
-@
-By default only failing tests are printed. In this case our test function
-is not robust against missing values for $Y$. This can be remedied
-by adding \code{na.rm=TRUE} to the \code{sum()} in the test function.
-<<>>=
-my_test1 <- function(d) nrow(d) >= 3 && sum(d$Y>=2, na.rm=TRUE) >=3 
-smoke_test(input, my_test1)
-@
-The smoke test is aimed at preventing complicated stack traces when errors occur
-in a call to \code{accumulate()} or \code{cumulate()}.  Users should be aware
-that it does not guarantee correctness of the results, only robustness against
-certain edge cases.
-
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Extensive example: economic data} \label{sect:example}
@@ -643,39 +647,40 @@ and into \code{size} classes with values in $\{5,6,7,8,9\}$.
 Small area estimation (SAE) is a collection of methods that are aimed at
 estimating subpopulation parameters in cases where there the number of
 observations in a subpopulation is so mall that direct estimation leads to
-unacceptable estimation variance. Instead one resorts to indirect estimation,
-meaning that one estimates parameters for a larger subpopulation which are then
-used in the estimate for the target subpopulation.  Here, we shall be
-interested in estimating the average turnover from industrial activities
-(\code{industrial}) by SBI and size class.
-
+unacceptable estimation variance. Instead one may resort for example to
+indirect estimation, meaning that one estimates parameters for a larger
+subpopulation which are then used in the estimate for the target subpopulation.
+Here, we shall be interested in estimating the average turnover from industrial
+activities (\code{industrial}) by SBI and size class.
 
 In the simplest case, where no auxiliary information is available or used, one
 replaces the estimator of the mean over a subpopulation with the estimator of
-the mean over a larger subpopulation. If we assume that all units in the
-dataset were sampled with equal probability based on a simple random sampling
-design, the mean is estimated with the sample mean. We will demand that there
-are at least ten records for which turnover has been measured. The collapsing
-scheme is given by \code{sbi*size ~ sbi + sbi2 + sbi1} where \code{sbi2} and
-\code{sbi1} are classification by respectively the first two SBI digits and the
-first SBI digit. We first add those variables to the dataset.
+the mean over a larger subpopulation that includes the target subpopulation
+\citep[Section 3.2.1]{rao2015small}. If we assume that the dataset is obtained
+by simple random sampling from the population, the mean can be estimated with
+the sample mean. In this example we will demand that there are at least ten
+records for which turnover has been measured. The collapsing scheme is given by
+\code{sbi*size ~ sbi + sbi2 + sbi1} where \code{sbi2} and \code{sbi1} are
+classification by respectively the first two SBI digits and the first SBI
+digit. We first add those variables to the dataset.
 <<>>=
 producers$sbi2 <- substr(producers$sbi,1,2)
 producers$sbi1 <- substr(producers$sbi,1,1)
 head(producers, 3)
 @
-Our test function looks as follows.
-<<>>=
-testfun <- function(d) sum(!is.na(d$industrial)) >= 10
-@
 Using \code{accumulate()} we obtain the means. 
 <<>>=
 a <- cumulate(producers
              , collapse = sbi*size ~ sbi + sbi2 + sbi1
-             , test = testfun
+             , test = min_complete(n=10, vars="industrial")
              , mean_industrial = mean(industrial, na.rm=TRUE))
 head(a,3)
 @
+
+In terms of SAE, the collapsing scheme expresses the assumption that estimates
+on the level of respectively \code{sbi}, \code{sbi2} and \code{sbi1} introduce
+an acceptable bias.
+
 
 \subsection{Imputing missing values using SAE and ratio imputation} 
 Our goal in this example is to impute missing values for the \code{industrial}
@@ -692,7 +697,7 @@ package \citep{loo2022simputation} to impute the missing values.
 <<>>=
 r <- cumulate(producers
          , collapse = sbi*size ~ sbi + sbi2 + sbi1
-         , test = testfun
+         , test = min_complete(n=10, vars="industrial")
          , R = mean(industrial, na.rm=TRUE)/mean(total, na.rm=TRUE))
 head(r,3)
 @
@@ -712,6 +717,31 @@ From this, we have all the information to interpret the imputed values. For
 example, we see that in record 664, the ratio was estimated after collapsing
 the group $(\texttt{sbi},\texttt{size})=(21122,7)$ to $\texttt{sbi2}=21$ since
 the collapse \code{level} equals 2.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Computing linear models}
+Generalizing further, one may be interested in estimating (statistical) models.
+With the \code{cumulate} function it is possible to specify complex aggregates
+that go beyond a simple number. Below, we estimate the following linear model
+\begin{displaymath}
+\code{total} = \beta_0 + \beta_i\code{industrial} + \varepsilon,
+\end{displaymath}
+demanding that there are at least 10 records where both predictor and predicted
+variable are available.
+<<>>=
+r <- cumulate(producers
+         , collapse = sbi*size ~ sbi + sbi2 + sbi1
+         , test = min_complete(n=5, vars=c("total","industrial"))
+         , model = lm(total ~ industrial)
+         , mean  = mean(total,na.rm=TRUE))
+head(r,3)
+@
+
+
+
+
+
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Formal description and algorithms}

@@ -94,7 +94,15 @@ out <- cumulate(data=input
 expect_equivalent(out, output)
 
 # Case where the aggregate is an object (not a scalar)
+out <- cumulate(data=input
+        , collapse = A*B ~ A*B1 + A
+        , test = function(d) nrow(d) >= 3
+        , model = lm(Y ~ 1)
+       )
 
+expect_inherits(out$model, "object_list")
+
+# with extra columns
 out <- cumulate(data=input
         , collapse = A*B ~ A*B1 + A
         , test = function(d) nrow(d) >= 3
@@ -103,6 +111,9 @@ out <- cumulate(data=input
        )
 
 expect_equivalent(sapply(out$model, coef), out$mean)
+
+
+
 
 ## test connection with 'validator' 
 if ( !requireNamespace("validate", quietly=TRUE) ){ 

@@ -222,7 +222,7 @@ is_scalar <- function(x){
 # Output:
 # A data frame, of the form [backbone, results].
 #
-combine <- function(backbone,results, ag){
+combine <- function(backbone, results, ag){
   # The simple case: aggregates are atomic; this probably covers
   # most cases.
   if (!any(sapply(results, is.list))){
@@ -239,7 +239,6 @@ combine <- function(backbone,results, ag){
       lapply(results, `[[`,var)
     }
   })
-
   names(L) <- names(results[[1]])
   # make listcol objects of columns that are lists, so they are 
   # printed better.
@@ -349,7 +348,7 @@ get_ag <- function(cps, x, dnames, ...){
     gv <- if(inherits(cps,"formula")) all.vars(cps) else colnames(cps)
     function(dat) sapply(dat[ ,!colnames(dat) %in% gv, drop=FALSE], f)
   } else {
-    function(dat) sapply(x, function(e) with(dat,eval(e)))
+    function(dat) lapply(x, function(e) with(dat,eval(e)))
   }
   outnames <- if (!is.function(x)) names(x)
               else if (inherits(cps,"formula")) dnames[!dnames %in% all.vars(cps)]
