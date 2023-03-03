@@ -751,19 +751,19 @@ print method.
 \section{Formal description and algorithms} \label{sect:algorithm}
 In this section we give a formal description of the algorithm for aggregation
 with dynamic grouping.  We start by giving an algorithm for ordinary
-split-apply-combine to show where the algorithm must be generalized to allow
-for a collapsing scheme.
+split-apply-combine to demonstrate how the algorithm must be generalized to
+allow for a collapsing scheme.
 
 \subsection{Split-apply-combine}
 To analyse a data set group by group we need to specify a data set, a
 way to split it into groups, and a function that takes a subset of data and
 returns an aggregate. Let us introduce some notation for that.
 
-Denote with $U$ be a finite set, and and let $\phi:2^U\to X$ be a function that
+Denote with $U$ be a finite set, and let $\phi:2^U\to X$ be a function that
 accepts a subset of $U$ and returns a value in some domain $X$.  Here, $U$
 represents a data set, $2^U$ its power set, and $\phi$ an aggregating function.
 We split $U$ into groups using the following notation. Let $A$ be finite set
-that has no more elements than $U$, and let $f:\onto A$ be a
+that has no more elements than $U$, and let $f:U\onto A$ be a
 surjective function that takes an element of $U$ and returns a value in $A$. We
 can think of $A$ as a set of group labels, and $f$ as the function that assigns
 a label to each element of $U$. This way, $f$ divides $U$ into non-overlapping
@@ -794,13 +794,13 @@ $R = \{\}$\;
 \end{algorithm}
 %
 In this algorithm the output is collected in a set $R$ containing pairs from
-$A\times X$: one pair for each element of $A$. Incidentely, the algorithm can
-be summarized even shorter in this notation as $R=\cup_{a\in A}\{(a,(\phi\circ
+$A\times X$: one pair for each element of $A$. Incidently, the algorithm can be
+summarized even shorter in this notation as $R=\cup_{a\in A}\{(a,(\phi\circ
 f^*)(\{a\}))\}$, where $\circ$ denotes function composition.  Since $f^*$
-always receives a singleton set, its definition as a function of the powerset
-of the group labels $A$ is too general for this algorithm.  However, this
-generalization turns out to be necessary when generalizing the algorithm to the
-case of dynamic grouping.
+always receives a singleton set, its definition as a pullback along $f$ more
+general then necessary for this algorithm.  However, this formulation turns out
+to be necessary when generalizing the algorithm to the case of dynamic
+grouping.
 
 It is interesting to see how the elements $U$, $f:U\onto A$, and
 $\phi$ are implemented in practice. Consider the signature of the
