@@ -54,7 +54,17 @@ options(prompt = "R> ", continue = "+  ", width = 70, useFancyQuotes = FALSE)
 
 
 \Abstract{
-foo
+Partitioning a data set by one or more of its attributes and computing an
+aggregate for each part is one of the most common operations in data analyses.
+There are use cases where the partitioning is determined dynamically by
+collapsing smaller subsets into larger ones, to ensure sufficient support for
+the computed aggregate. These use cases are not supported by software
+implementing split-apply-combine types of operations. This paper presents the
+\proglang{R} package \code{accumulate} that offers convenient interfaces for
+defining grouped aggregation where the grouping itself is dynamically
+determined, based on user-defined conditions on subsets, and a user-defined
+subset collapsing scheme. Finally, we demonstrate and analyze the pseudocode
+underlying this method.
 }
 
 %% - \Keywords{} with LaTeX markup, at least one required
@@ -105,24 +115,24 @@ languages for a long time. For \proglang{R} there are several packages that
 implement functionality for this, including \pkg{plyr}
 \citep{wickham2011split}, it's successor \pkg{dplyr} \citep{wickham2022dplyr},
 it's drop-in replacement \pkg{poorman} \citep{eastwood2022poorman}, and
-\proglang{R} packages \pkg{collapse} \citep{krantz2022collapse} and
-\pkg{data.table} \citep{dowle2022datatable}. In \proglang{Python} the
-\code{pandas} package implements several methods for grouping records and
-aggregating over one or more columns in data frame objects. Similarly, the
-\pkg{DataFrames} package for \proglang{julia} implements such functionality
-\citep{kaminski2022dataframes}.
+performance-focused \proglang{R} packages \pkg{collapse}
+\citep{krantz2022collapse} and \pkg{data.table} \citep{dowle2022datatable}. In
+\proglang{Python} the \code{pandas} package implements several methods for
+grouping records and aggregating over one or more columns in data frame
+objects. Similarly, the \pkg{DataFrames} package for \proglang{julia}
+implements such functionality \citep{kaminski2022dataframes}.
 
 In all packages mentioned, the calculation for each group uses data available
 within the group. However, there are valid use cases where a group aggregate is
 determined using attributes from out-of-group entities. One example where this
-occurs is in the area of small area estimation (see e.g.
-\citet{molina2015sae}. Here, one wishes to estimate an aggregate for a group,
-for example a geographical region, or a detailed population subset, where the
-number of (sampled) observations so small that the variance of the estimate
-would be unacceptably large. In small area estimation (SAE) one trades bias for
-variance by `borrowing statistical strength' from out-of-group records. The
-out-of-group records can be obtained, for example by combining the original
-small group with a group of records that are deemed similar in certain
+occurs is in the area of Small Area Estimation (SAE, see \emph{e.g.}
+\citet{rao2015small, molina2015sae}). Here, one wishes to estimate an aggregate
+for a group, for example a geographical region, or a detailed population
+subset, where the number of (sampled) observations so small that the variance
+of the estimate would be unacceptably large. In small area estimation (SAE) one
+trades bias for variance by `borrowing statistical strength' from out-of-group
+records. The out-of-group records can be obtained, for example by combining the
+original small group with a group of records that are deemed similar in certain
 respects. A second area where out-of-group records play a role is in certain
 hot-deck imputation methods \citep{andridge2010review}.  In
 $k$-nearest-neighbours imputation for example, one finds a set of $k$ donor
@@ -133,35 +143,18 @@ combination of the Gower distance and setting conditions on minimal number of
 donors. In practice, imputation is often performed via a fall-though scenario,
 where one first tries to estimate a model within a group, but if the group is
 too small for a reliable estimate of model parameters, the group is enlarged by
-combining similar groups, similar to the small-area estimation scenario. A
-third example comes from the field of statistical disclosure control (SDC)
-\citep{hundepool2012statistical}. In this field, the so-called $p$\% rule
-states that the value in a grouped aggregation may not be determined for more
-than $p$ percent by a single entity. This occurs for example, when a certain
-economic activity in a geographic region is dominated by a single company. In
-such cases the value can either not be published (suppression), or one
-publishes an aggregate over larger groups. Similarly for microdata there is the
-concept of $k$-anonymity, which states that each combination of properties must
-occur at least $k$ times in a data set so as to prevent reidentification or
-disclosure of individual properties. One way to achieve this is to combine
-detailed groupings based on categorical variables into larger groups. For
-example by combining groups that in a hierarchical classification have the same
-parent.
+combining similar groups, similar to the small-area estimation scenario. 
 
-Both SAE and SDC are supported by \proglang{R} and other free software. Small
-area estimation methodology has for example been implemented in the \pkg{sae}
-package of \cite{molina2015sae} and the \pkg{hbsae} package of
-\cite{boonstra2022hbsae}.  Disclosure control methodology is implemented in the
-free and open source standalone software $\tau-$Argus for tabular data and
-$\mu$-Argus for microdata \citep{argus2022}, and is also supported by
-\proglang{R} packages \pkg{sdcMicro} and \pkg{sdcTable}
-\citep{templ2015statistical, meindl2022sdctable}. Regarding imputation
-methodology, the CRAN task view on missing
-data\footnote{https://cran.r-project.org/web/views/MissingData.html} currently
-lists 203 \pkg{R} packages that support some form of estimating missing data.
-The \pkg{simputation} package \citep{loo2022simputation} seems to be the only
-one that allows for some kind of fall-through scenario for selecting methods,
-but it does not allow for dynamic grouping.
+
+SAE as a special case is well supported by \proglang{R} and other free
+software. Methodology has for example been implemented in the \pkg{sae} package
+of \cite{molina2015sae} and the \pkg{hbsae} package of
+\cite{boonstra2022hbsae}.  Regarding imputation methodology, the CRAN task view
+on missing data\footnote{https://cran.r-project.org/web/views/MissingData.html}
+currently lists 203 \pkg{R} packages that support some form of estimating
+missing data.  The \pkg{simputation} package \citep{loo2022simputation} seems
+to be the only one that allows for some kind of fall-through scenario for
+selecting methods, but it does not allow for dynamic grouping.
 
 Summarizing, we see that on one hand there are many implementations available
 for generic aggregation based on fixed groups. On the other hand there are
@@ -172,7 +165,7 @@ the form of an \pkg{R} package \pkg{accumulate} \cite{loo2022accumulate}.
 
 The \code{accumulate} package serves the use case where a user wishes to
 compute aggregates for a certain grouping of records. However, if a certain
-instance of a group does not meet user-defined quality requirements, the set of
+instance of a group does not meet user-defined quality requirements the set of
 records is expanded by (recursively) collapsing the grouping according to a
 user-defined scheme. For example, given some financial data on companies, one
 wishes to compute the average profit to turnover ratio for each combination of
@@ -182,11 +175,10 @@ could drop size class and compute the average ratio over all records within a
 certain economic activity. Or, one could choose to course-grain economic
 activities by collapsing groups with activities that are deemed similar enough.
 
-
 The package has been developed with the following design choices in mind.
 First, the interface should be easy to learn for \proglang{R} users, and thus
 should resemble existing popular interfaces where possible. Second, users
-should be free to define any possibly multi-step, collapsing scheme.  Here, we
+should be free to define any possibly multi-step, collapsing scheme. Here, we
 keep in mind that collapsing schemes may be constructed manually based on
 domain knowledge and that users may want to experiment with several schemes
 before deciding on a final solution. This calls for a certain separation of
@@ -194,26 +186,35 @@ concerns between defining collapsing schemes and applying them to data.  The
 package should also support collapsing schemes that follow naturally from
 hierarchical classification systems. Third, users should have the flexibility
 to define any quality requirement on the grouping while common quality
-requirements are supported out of the box. Common quality requirements include a
-minimum number of records, or a minimum fraction of records without missing
-values, or a minimum number of records with non-zero values. 
+requirements are supported out of the box. Common quality requirements include
+a minimum number of records, or a minimum fraction of records without missing
+values, or a minimum number of records with non-zero values. Finally, the
+package should support simple outputs such as counts or averages, but also
+compound objects such as the output of model estimates.
 
-The rest of this paper is organized as follows. In the next section we formally
-define the concepts of the quality requirements and a collapsing scheme. We
-describe the fundamental algorithm in pseudocode and compare it with the
+The rest of this paper is organized as follows.  In the next section we
+visually explain dynamic grouping via a collapsing scheme and introduce the
+running example that will be used in Section~\ref{sect:accumulate} which
+introduces the \pkg{accumulate} package, the main interfaces and helper
+functions. In Section~\ref{sect:accumulate} we also discuss the common case of
+collapsing via a predifined hiearchical classification scheme.
+Section~\ref{sect:example} demonstrates the package on a realistic synthetic
+dataset. The case of complex outputs is also demonstrated in this Section.  In
+Section~\ref{sect:algorithm} we derive the pseudocode that solves the problem
+of aggregating with dynamically collapsing groups. We show that it is a precise
+and straightforward generalization of the standard split-apply-combine problem
+and analyze its time complexity.
+
+
+
+
+
+
+
+We describe the fundamental algorithm in pseudocode and compare it with the
 standard grouping scenario. We also discuss the time and space complexity and
-some caveats with implementation and performance. This section is mainly of
-interest for developers who wish to include such functionality in their own
-package. In Section~\ref{sect:accumulate} we describe \pkg{accumulate} package
-and demonstrate how the design choices have determined its implementation.  We
-give some toy examples to extensively discuss the input and output of the main
-functions, discuss how to define tests in some detail, and also explain how one
-can program over the functions in the package.  Section~\ref{sect:example}
-works through a realistic example based on a synthetic dataset of economic
-microdata. We conclude with a summary and outlook in
-Section~\ref{sect:conclusion}.
 
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Dynamic grouping} \label{sect:dynamicgrouping}
 In this section the illustrate the concept of dynamic grouping with a minimal
 worked example. This example is not very realistic, but it is constructed
@@ -317,13 +318,17 @@ data frame and can schematically be represented as follows.
 The first columns represent the variables that define the output grouping, the
 next column is an integer that indicates the level of collapsing used to
 compute the aggregate (0 indicating no collapse), and the last set of columns
-store the aggregates.
+store the aggregates. Output aggregates may be of a simple data type
+(\code{numeric}, \code{character}, \code{logical},$\ldots$) or of a composed
+type such as the output of a linear model. The latter case is demonstrated in
+Section~\ref{sect:complex}.
 
 Both functions support two different interfaces for specifying collapsing
 schemes through the \code{collapse} parameter. The first and most general is
 the formula interface, which requires that the collapsing sequence is
-represented as variables in the data set to be aggregated. The second is the
-tabular interface, where a table similar to~\eqref{eq:tablerep} is expected. 
+represented as variables in the data set to be aggregated. The second is a
+tabular interface where each row starts with the one of the lowest-level group
+labels, and subsequent columns contain labels of courser groups.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -719,32 +724,31 @@ the group $(\texttt{sbi},\texttt{size})=(21122,7)$ to $\texttt{sbi2}=21$ since
 the collapse \code{level} equals 2.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{Computing linear models}
+\subsection{Computing complex aggregates} \label{sect:complex}
 Generalizing further, one may be interested in estimating (statistical) models.
 With the \code{cumulate} function it is possible to specify complex aggregates
 that go beyond a simple number. Below, we estimate the following linear model
 \begin{displaymath}
-\code{total} = \beta_0 + \beta_i\code{industrial} + \varepsilon,
+\texttt{total} = \beta_0 + \beta_i\texttt{industrial} + \varepsilon,
 \end{displaymath}
 demanding that there are at least 10 records where both predictor and predicted
 variable are available.
 <<>>=
 r <- cumulate(producers
          , collapse = sbi*size ~ sbi + sbi2 + sbi1
-         , test = min_complete(n=5, vars=c("total","industrial"))
-         , model = lm(total ~ industrial)
-         , mean  = mean(total,na.rm=TRUE))
+         , test = min_complete(n=10, vars=c("total","industrial"))
+         , model = lm(total ~ industrial))
 head(r,3)
 @
-
-
-
-
+Here, the last column is a list of class \code{object_list}, where each
+element is either an object of class \code{lm} or \code{NA}. Variables of class
+\code{object_list} only differ from from a standard \proglang{R} list by their
+print method.
 
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Formal description and algorithms}
+\section{Formal description and algorithms} \label{sect:algorithm}
 In this section we give a formal description of the algorithm for aggregation
 with dynamic grouping.  We start by giving an algorithm for ordinary
 split-apply-combine to show where the algorithm must be generalized to allow
@@ -897,15 +901,31 @@ collapses applied to reach a suitable dataset.
 
 Comparing Algorithms~\ref{alg:sac} and~\ref{alg:saccg}, we see that the
 standard split-apply-combine algorithm has worst-case runtime complexity
-$O(|A|)$, which is equal to the best case $\Omega(|A|)$. The
-split-apply-combine with collapsing groups algorithm has best case
-$\Omega(|A|)$ equal to standard split-apply-combine but worst case $O(n|A|)$.
-In fact, the best case for Algorithm~\ref{alg:saccg} is achieved by setting
-$\beta:d\mapsto\texttt{True}$. It is not hard to see that in this case
-Algorithm~\ref{alg:saccg} reduces to Algorithm~\ref{alg:sac}. The worst case is
-achieved by setting $\beta: d\mapsto \texttt{False}$. In that case the while
-loop in Line~\ref{line:while} is iterated $n-1$ times (yielding total $n$
-executions of $f^*$) while Line~\ref{line:R} is never executed.
+$O(|A|)$, as determined by counting applications of $f^*$. This is equal to the
+algorithm's best case $\Omega(|A|)$. The split-apply-combine with collapsing
+groups algorithm also has best case $\Omega(|A|)$ but has worst case $O(n|A|)$
+(with $n$ the number of collapsing steps). In fact, the best case for
+Algorithm~\ref{alg:saccg} is achieved by setting $\beta:d\mapsto\texttt{True}$.
+It is not hard to see that in this case Algorithm~\ref{alg:saccg} reduces to
+Algorithm~\ref{alg:sac}. The worst case is achieved by setting $\beta: d\mapsto
+\texttt{False}$. In that case the while loop in Line~\ref{line:while} is
+iterated $n-1$ times (yielding total $n$ executions of $f^*$) while
+Line~\ref{line:R} is never executed.
+
+The analyses above leaves open the question of how the runtime depends on
+application of the pullback $f^*$. First note that there is no difference in
+applying the $f^*$ or $f^*\circ F_i^*\circ F_i$: in practice a nested function
+call is not necessary as the collapsing scheme is fully available as input. The
+pullback performs a lookup of records based on matching one or more attributes
+with a set of attribute values. The time complexity of such operations are
+typically reduced by proper preparation of the dataset. For example, in
+databases one may define indices that speed up certain often-used lookup
+operations (that then may rely on those indices). In the implementation of the
+\code{accumulate()} package the pullback is (currently) implemented using
+standard join operations as implemented by \proglang{R}'s standard
+\code{merge()} function.  This implies that the time complexity of
+\code{accumulate()} and \code{cumulate()} should be multiplied with the time
+dependence of \code{merge()}.
 
 
 
@@ -913,14 +933,28 @@ executions of $f^*$) while Line~\ref{line:R} is never executed.
 
 
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Summary and conclusion}\label{sect:conclusion}
+The \proglang{R} package \code{accumulate} introduced in this paper offers
+convenient interfaces for computing grouped aggregates where the grouping is
+dynamically determined based on a user-defined conditions and a user-defined
+collapsing scheme. We demonstrated that these interfaces can be used in
+situations including multiple grouping variables and complex collapsing
+schemes, as well as situations where multiple variables need to be aggregated
+over. Moreover, the package supports the collection of complex aggregates, such
+as model outputs and offers several service functions that aim to facilitate
+the definition of the collapsing conditions.
 
-\begin{itemize}
-\item{Record-wise results}
-\item{Record-wise imputation}
-\item{Representation of hierarchical classifications: parent-child lists vs tabular}
-\end{itemize}
+Finally, the pseudocode underlying the package's main functions has been
+formally analyzed and it is shown that aggregation with collapsing groups can
+be interpreted as a generalization of standard grouped aggregation in a very
+precise sense. We hope that this stimulates broader implementation of this
+algorithm in software offering grouped aggregation.
 
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \bibliography{refs}
 
