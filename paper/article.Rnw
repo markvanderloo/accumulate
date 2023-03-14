@@ -673,7 +673,7 @@ producers$sbi2 <- substr(producers$sbi,1,2)
 producers$sbi1 <- substr(producers$sbi,1,1)
 head(producers, 3)
 @
-Using \code{accumulate()} we obtain the means. 
+Using \code{cumulate()} we obtain the means. 
 <<>>=
 a <- cumulate(producers
              , collapse = sbi*size ~ sbi + sbi2 + sbi1
@@ -687,7 +687,7 @@ on the level of respectively \code{sbi}, \code{sbi2} and \code{sbi1} introduce
 an acceptable bias.
 
 
-\subsection{Imputing missing values using SAE and ratio imputation} 
+\subsection{Imputing missing values using SAE and ratio imputation} \label{sect:ratio}
 Our goal in this example is to impute missing values for the \code{industrial}
 variable based on ratio imputation with \code{total} as predictor.  Ratio
 imputation is a method where the imputed value $\hat{y}_i$ for variable $Y$ of
@@ -723,11 +723,67 @@ example, we see that in record 664, the ratio was estimated after collapsing
 the group $(\texttt{sbi},\texttt{size})=(21122,7)$ to $\texttt{sbi2}=21$ since
 the collapse \code{level} equals 2.
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Random Nearest neighbours imputation with collapsing groups}
+Nearest neighbor (NN) imputation is a donor imputation method where the
+imputation value is copied from a (possibly random) donor record with
+attributes that are sufficiently similar \citep{andridge2010review}.
+One way to generate an imputation value is to select a random donor
+from the same group. To prevent the same donor from being used too
+often, it is not uncommon to demand a minimum number of records
+in the donor pool. A collapsing scheme is one way of guaranteeing
+this, and below we demonstrate how this problem can be expressed
+in \code{accumulate}.
+
+We wish to impute the variable \code{trade} in the \code{producers} dataset
+using donor imputation, where donors come from the same (\code{sbi},
+\code{size}) combination. We wish to sample donor values from a group of at
+least 5 donors. If this is not possible, we use the same fallback scenario as
+in the previous Section.
+
+We first define an `aggregation' function that takes a vector 
+of donors and returns a non-empty sample.
+<<>>=
+random_element <- function(x) sample(x[!is.na(x)], 1)
+@
+To make sure we obtain a donor for each record, we add an
+identifying column to use as grouping variable.
+\code{id} column.
+<<>>=
+producers <- cbind(id = sprintf("ID%03d",seq_len(nrow(producers)))
+                  , producers)
+set.seed(111)
+imputations <- cumulate(producers
+                 , collapse = id ~ sbi*size + sbi + sbi2 + sbi1
+                 , test = min_complete(5,"trade")
+                 , donor_trade = random_element(trade))
+
+head(imputations, 3)
+@
+To use the donor imputations, we merge the imputation candidates with the
+original dataset and use \code{impute_proxy()} of the \pkg{simputation} package
+for imputation.
+<<>>=
+imputed <- merge(producers, imputations) |>
+           impute_proxy(trade ~ donor_trade)
+cols <- c(1:3,9:10,5)
+head(producers[cols],3)
+head(imputed[c(cols,11)],3)
+@
+The merge operation automatically merges on the \code{id} column, which also
+adds the \code{level} column to the output.  The function \code{impute_proxy}
+copies values from \code{donor_trade} into trade where \code{trade} is missing.
+In the last expressions we only print the columns of interest. 
+
+
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Computing complex aggregates} \label{sect:complex}
-Generalizing further, one may be interested in estimating (statistical) models.
-With the \code{cumulate} function it is possible to specify complex aggregates
-that go beyond a simple number. Below, we estimate the following linear model
+Until now, the aggregates have been simple (scalar) values.  With the
+\code{cumulate()} function it is also possible to specify complex aggregates that
+go beyond simple aggregates. Below, we estimate the following linear model
 \begin{displaymath}
 \texttt{total} = \beta_0 + \beta_i\texttt{industrial} + \varepsilon,
 \end{displaymath}
