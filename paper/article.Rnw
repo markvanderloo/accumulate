@@ -691,7 +691,7 @@ an acceptable bias.
 Our goal in this example is to impute missing values for the \code{industrial}
 variable based on ratio imputation with \code{total} as predictor.  Ratio
 imputation is a method where the imputed value $\hat{y}_i$ for variable $Y$ of
-record $i$ is estimated as $\hat{y_i}=\hat{R}_d x_i$, where $\hat{R}$ is an
+record $i$ is estimated as $\hat{y_i}=\hat{R}_d x_i$, where $\hat{R}_d$ is an
 estimate of the ratio between $Y$ and an auxiliary variable $X$ in
 subpopulation $d$. An unbiased estimate for $R_d$ is given by
 $\hat{\bar{Y}}_d/\hat{\bar{X}}_d$ where $\hat{\bar{Y}}_d$ and $\hat{\bar{X}}_d$
@@ -727,14 +727,12 @@ the collapse \code{level} equals 2.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Random Nearest neighbours imputation with collapsing groups}
 Nearest neighbor (NN) imputation is a donor imputation method where the
-imputation value is copied from a (possibly random) donor record with
-attributes that are sufficiently similar \citep{andridge2010review}.
-One way to generate an imputation value is to select a random donor
-from the same group. To prevent the same donor from being used too
-often, it is not uncommon to demand a minimum number of records
-in the donor pool. A collapsing scheme is one way of guaranteeing
-this, and below we demonstrate how this problem can be expressed
-in \code{accumulate}.
+imputation value is copied from a record that is (randomly) chosen from a donor
+pool \citep{andridge2010review}. In this example we use the grouping variables
+in \code{producers} to define the donor pools. To prevent the same donor from
+being used too often, it is not uncommon to demand a minimum number of records
+in the donor pool. A collapsing scheme is one way of guaranteeing this, and
+below we demonstrate how this problem can be expressed in \code{accumulate}.
 
 We wish to impute the variable \code{trade} in the \code{producers} dataset
 using donor imputation, where donors come from the same (\code{sbi},
@@ -747,6 +745,9 @@ of donors and returns a non-empty sample.
 <<>>=
 random_element <- function(x) sample(x[!is.na(x)], 1)
 @
+We will use \code{cumulate()} to ensure that there are at least five non-empty
+values in \code{x} when \code{random_element()} is called. 
+
 To make sure we obtain a donor for each record, we add an
 identifying column to use as grouping variable.
 \code{id} column.
