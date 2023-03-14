@@ -146,8 +146,8 @@ a <- accumulate(producers, collapse = sbi*size ~ sbi + sbi3 + sbi2
                , test = min_records(5), fun = mean, na.rm=TRUE)
 head(round(a))
 ```
-Observe that for `(sbi,size) == (3410,8)` we have 3 levels of collapsing. In other
-words, for that aggregate, all records in `sbi2 == 34` were used.
+For `(sbi,size) == (2752,5)` we have 2 levels of collapsing. In other
+words, for that aggregate, all records in `sbi3 == 275` were used.
 
 ### Exercises
 
@@ -231,7 +231,7 @@ a <- accumulate(producers, collapse = sbi*size ~ sbi
                , fun  = mean, na.rm=TRUE)
 
 # 2. using a 'validator' object
-rules <- validate::validator(nrow(.) >= 3)
+rules <- validate::validator(nrow(.) >= 5)
 a <- accumulate(producers, collapse = sbi*size ~ sbi
                , test = from_validator(rules)
                , fun  = mean, na.rm=TRUE)
@@ -241,6 +241,33 @@ a <- accumulate(producers, collapse=sbi*size ~ sbi
                , test = function(d) nrow(d) >= 5
                , fun  = mean, na.rm=TRUE)
 ```
+
+## Complex aggregates
+
+An aggregate may be something more complex than a scalar. The `accumulate`
+package also supports complex aggregates such as linear models.
+
+```{#complex .R}
+a <- cumulate(producers, collapse = sbi*size ~ sbi
+                       , test = min_complete(5, c("other_income","trade"))
+                       , model = lm(other_income ~ trade)
+                       , mean_other = mean(other_income, na.rm=TRUE))
+
+head(a)
+```
+Here, we demand that there are at least five records available for estimating 
+the model.
+
+The linear models are stored in a `list` of type `object_list`. Subsets or individual
+elements can be accessed as usual with data frames.
+```{#objlist .R}
+a$model[[1]]
+a$model[[2]]
+```
+
+
+
+
 
 ### Smoke-testing your test function
 
