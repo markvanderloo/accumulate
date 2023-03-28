@@ -71,7 +71,7 @@ The accumulate function does the following:
 Explicitly, for this example we see that for `(sbi,size)==(2752,5)` no
 satisfactory group of records was found under the current collapsing scheme.
 Therefore the `level` variable equals `NA` and all aggregated variables are
-missing as well.  For `(sbi,size)==(22840,7)` there are sufficient records, and
+missing as well.  For `(sbi,size)==(2840,7)` there are sufficient records, and
 since `level=0` no collapsing was necessary. For the group
 `(sbi,size)=(3410,8)` there were not enough records to compute a mean, but
 taking all records in `sbi==3410` gave enough records. This is signified by
@@ -93,7 +93,7 @@ Let us see how we specified this call to `accumulate`
 - Finally, the argument `fun` is the aggregation function that will be applied to each
   group. 
 
-Observe that the accumulate funtion is similar to R's built-in `aggregate` function (this is
+Observe that the accumulate function is similar to R's built-in `aggregate` function (this is
 by design). There is a second function called `cumulate` that has an interface that
 is similar to `dplyr::summarise`.
 
