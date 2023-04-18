@@ -35,3 +35,30 @@ print.object_list <- function(x,...) print(format.object_list(x,...))
 }
 
 
+# check whether formula follows the allowed syntax
+ok_formula <- function(x){
+  x[[1]] == "~" && is_product(x[[2]]) && is_sum(x[[3]])
+}
+
+is_sum <- function(x){
+  length(x)==1 || is_product(x) || (x[[1]] == "+" &&
+    (length(x[[2]]) == 1 || is_sum(x[[2]]) || is_product(x[[2]])) &&
+    (length(x[[3]]) == 1 || is_sum(x[[3]]) || is_product(x[[3]])))
+}
+
+is_product <- function(x){
+  length(x) == 1 || (x[[1]] == "*" &&
+  (length(x[[2]] == 1) || is_product(x[[2]])) &&
+  (length(x[[3]] == 1) || is_product(x[[3]])) )
+}
+
+
+
+
+
+
+
+
+
+
+

@@ -342,6 +342,9 @@ curry <- function(fun,...){
 # The output function has an attribute 'outnames' containing 
 # the names of the output variables.
 get_ag <- function(cps, x, dnames, ...){
+  if ( inherits(cps,"formula") && !ok_formula(cps) ){
+    stopf("Invalid formula: '%s' ", deparse(cps))
+  }
   ag <- if ( is.function(x) ){
     f <- curry(x, ...)
     # grouping variables 'gv' are not to be aggregated over

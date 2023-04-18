@@ -133,6 +133,8 @@ expect_silent(accumulate(input, collapse = A*B ~ A*B1 + B1,
     test = from_validator(rules), fun=sum))
 
 
+# test formula-checking
+expect_error(accumulate(input, collapse=A*B~A~B, test=min_records(3), fun=mean))
 
 
 
