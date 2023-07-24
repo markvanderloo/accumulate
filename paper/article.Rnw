@@ -63,8 +63,8 @@ implementing split-apply-combine types of operations. This paper presents the
 \proglang{R} package \code{accumulate} that offers convenient interfaces for
 defining grouped aggregation where the grouping itself is dynamically
 determined, based on user-defined conditions on subsets, and a user-defined
-subset collapsing scheme. Finally, we demonstrate and analyze the pseudocode
-underlying this method.
+subset collapsing scheme. The formal underlaying algorithm is described and
+analyzed as well.
 }
 
 %% - \Keywords{} with LaTeX markup, at least one required
@@ -119,8 +119,10 @@ performance-focused \proglang{R} packages \pkg{collapse}
 \citep{krantz2022collapse} and \pkg{data.table} \citep{dowle2022datatable}. In
 \proglang{Python} the \code{pandas} package implements several methods for
 grouping records and aggregating over one or more columns in data frame
-objects. Similarly, the \pkg{DataFrames} package for \proglang{julia}
-implements such functionality \citep{kaminski2022dataframes}.
+objects. The more recent \citet{polars2023} library for \proglang{Python} and
+\proglang{Rust} also implements such features. Similarly, the \pkg{DataFrames}
+package for \proglang{julia} implements split-apply-combine functionality
+\citep{kaminski2022dataframes}.
 
 In all packages mentioned, the calculation for each group uses data available
 within the group. However, there are valid use cases where a group aggregate is
@@ -128,7 +130,7 @@ determined using attributes from out-of-group entities. One example where this
 occurs is in the area of Small Area Estimation (SAE, see \emph{e.g.}
 \citet{rao2015small, molina2015sae}). Here, one wishes to estimate an aggregate
 for a group, for example a geographical region, or a detailed population
-subset, where the number of (sampled) observations so small that the variance
+subset, where the number of (sampled) observations is so small that the variance
 of the estimate would be unacceptably large. In small area estimation (SAE) one
 trades bias for variance by `borrowing statistical strength' from out-of-group
 records. The out-of-group records can be obtained, for example by combining the
@@ -161,7 +163,7 @@ for generic aggregation based on fixed groups. On the other hand there are
 domain-specific implementation for methods where dynamic grouping of a set of
 records plays a role. This paper presents a generic solution to
 split-apply-combine aggregation where groups can be collapsed dynamically in
-the form of an \pkg{R} package \pkg{accumulate} \cite{loo2022accumulate}.
+the form of \pkg{R} package \pkg{accumulate} \citep{loo2022accumulate}.
 
 The \code{accumulate} package serves the use case where a user wishes to
 compute aggregates for a certain grouping of records. However, if a certain
@@ -178,7 +180,7 @@ activities by collapsing groups with activities that are deemed similar enough.
 The package has been developed with the following design choices in mind.
 First, the interface should be easy to learn for \proglang{R} users, and thus
 should resemble existing popular interfaces where possible. Second, users
-should be free to define any possibly multi-step, collapsing scheme. Here, we
+should be free to define any, possibly multi-step, collapsing scheme. Here, we
 keep in mind that collapsing schemes may be constructed manually based on
 domain knowledge and that users may want to experiment with several schemes
 before deciding on a final solution. This calls for a certain separation of
@@ -203,16 +205,10 @@ dataset. The case of complex outputs is also demonstrated in this Section.  In
 Section~\ref{sect:algorithm} we derive the pseudocode that solves the problem
 of aggregating with dynamically collapsing groups. We show that it is a precise
 and straightforward generalization of the standard split-apply-combine problem
-and analyze its time complexity.
+and analyze its time complexity. A summary and conlcusion follows in
+Section~\ref{sect:conclusion}.
 
 
-
-
-
-
-
-We describe the fundamental algorithm in pseudocode and compare it with the
-standard grouping scenario. We also discuss the time and space complexity and
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Dynamic grouping} \label{sect:dynamicgrouping}
@@ -226,7 +222,7 @@ $B$ is a hierarchical classification with levels $\{11,12,13,21,22\}$. Variable
 $B_1$ is a course graining of $B$: for each record the value for $B_1$ is the
 first digit of $B$. Hence, $B_1$ has levels $\{1,2\}$. 
 
-Our goal is to compute the sum $t_Y$ over $Y$, grouped by $A\times B$.  We
+Our goal is to compute the mean $\mu_Y$ over $Y$, grouped by $A\times B$.  We
 impose the condition that there must be at least three records in each group.
 If a certain group $(a\in A,b\in B)$ has less than three records, we attempt
 to compute the value for that group over records in $(a,b_1)$ where $b_1$ is
@@ -241,29 +237,29 @@ output. Colors indicate which data was used.
 \begin{tabular}{cccl}
 \multicolumn{4}{l}{Input data}\\
 \hline
-$A$ & $B$ & $B1$ & $Y$\\
+$A$ & $B$ & $B_1$ & $Y$\\
 \hline
 \cellcolor{red!25}   1 &\cellcolor{red!25}   11 &                1       & \cellcolor{red!25}   1   \\
 \cellcolor{red!25}   1 &\cellcolor{red!25}   11 &                1       & \cellcolor{red!25}   2   \\
-\cellcolor{red!25}   1 &\cellcolor{red!25}   11 &                1       & \cellcolor{red!25}   4   \\
-\cellcolor{green!25} 2 &                     12 & \cellcolor{green!25} 1 & \cellcolor{green!25} 8   \\
-\cellcolor{green!25} 2 &                     12 & \cellcolor{green!25} 1 & \cellcolor{green!25} 16  \\
-\cellcolor{green!25} 2 &                     13 & \cellcolor{green!25} 1 & \cellcolor{green!25} 32  \\
-\cellcolor{blue!25}  3 &                     21 &                2       & \cellcolor{blue!25}  64  \\
-\cellcolor{blue!25}  3 &                     22 &                2       & \cellcolor{blue!25}  128 \\
-\cellcolor{blue!25}  3 &                     12 &                1       & \cellcolor{blue!25}  256 \\
+\cellcolor{red!25}   1 &\cellcolor{red!25}   11 &                1       & \cellcolor{red!25}   3   \\
+\cellcolor{green!25} 2 &                     12 & \cellcolor{green!25} 1 & \cellcolor{green!25} 4   \\
+\cellcolor{green!25} 2 &                     12 & \cellcolor{green!25} 1 & \cellcolor{green!25} 5   \\
+\cellcolor{green!25} 2 &                     13 & \cellcolor{green!25} 1 & \cellcolor{green!25} 6   \\
+\cellcolor{blue!25}  3 &                     21 &                2       & \cellcolor{blue!25}  7   \\
+\cellcolor{blue!25}  3 &                     22 &                2       & \cellcolor{blue!25}  8   \\
+\cellcolor{blue!25}  3 &                     12 &                1       & \cellcolor{blue!25}  9   \\
 \hline
 \end{tabular}\hspace{1cm}\begin{tabular}{ccl}
 \multicolumn{3}{l}{Output}\\
 \hline
-$A\times B$ & \code{level} & $t_Y$\\
+$A\times B$ & \code{level} & $\mu_Y$\\
 \hline
-\rowcolor{red!25}   1 11        & 0             & 7  \\
-\rowcolor{green!25} 2 12        & 1             & 56 \\
-\rowcolor{green!25} 2 13        & 1             & 56 \\
-\rowcolor{blue!25}  3 21        & 2             & 448\\
-\rowcolor{blue!25}  3 22        & 2             & 448\\
-\rowcolor{blue!25}  3 12        & 2             & 448\\
+\rowcolor{red!25}   1 11        & 0             & 2  \\
+\rowcolor{green!25} 2 12        & 1             & 5  \\
+\rowcolor{green!25} 2 13        & 1             & 5  \\
+\rowcolor{blue!25}  3 21        & 2             & 8  \\
+\rowcolor{blue!25}  3 22        & 2             & 8  \\
+\rowcolor{blue!25}  3 12        & 2             & 8  \\
 \hline
 \end{tabular}
 \label{eq:example}
@@ -271,18 +267,18 @@ $A\times B$ & \code{level} & $t_Y$\\
 %
 The First row in the output represents group $(A=1,B=11)$. The collapsing level
 is zero, which means that no collapsing was necessary. Indeed, in the data
-table we see that there are three rows with $A=1$ and $B==11$ with $Y$ values
-$1, 2$, and $7$, resulting in $t_Y=7$ for this group.
+table we see that there are three rows with $A=1$ and $B=11$ with $Y$ values
+$1, 2$, and $3$, resulting in $\mu_Y=(1+2+3)/3=2$ for this group.
 
 Next, we try to compute the total for group $(A=2,B=12)$ (in green) but find
 that there are only two such rows. We now define a new group $(A=2,B_1=1)$ and
 find that there are three records in that group so we get 
-$t_Y=8+16+32=56$.  Similarly, there is only one record with $(A=2,B=13)$. 
-Collapsing groups to $(A=2,B1=1)$, yields again $t_y=56$.
+$\mu_Y=(4+5+6)/3=5$.  Similarly, there is only one record with $(A=2,B=13)$. 
+Collapsing groups to $(A=2,B_1=1)$, yields again $\mu_y=5$.
 
 Finally, for $(A=2,B=21)$ there is only a single record. Collapsing to
-$(A=2,B1=2)$ yields only two records, so we need to collapse further to $(A=2)$
-and finally obtain three records.  This yields $t_Y=64+128+256=448$. Similarly,
+$(A=2,B_1=2)$ yields only two records, so we need to collapse further to $(A=2)$
+and finally obtain three records.  This yields $\mu_Y=(7+8+9)/3=8$. Similarly
 the groups $(A=3, B=22)$ and $(A=3,B=12)$ are collapsed to $(A=2)$.
 
 
@@ -305,10 +301,11 @@ Here \texttt{data} is a data frame holding data to be aggregated;
 for aggregation or not. In \code{accumulate()}, the parameter \code{fun}
 represents an aggregation function that is applied to every column of
 \code{data}, and the ellipsis (\code{...}) is for arguments that are passed as
-extra argument to \code{fun}. The interface of \code{accumulate()} is modeled
-after the \code{aggregate()} function in \proglang{R}.  In \code{cumulate}, the
-ellipsis is a sequence of comma-separated \code{name=expression} pairs in the
-style of \code{summarise()} from the \code{dplyr} package.
+extra argument to \code{fun}. The interface of \code{accumulate()} is somewhat
+similar to that of the \code{aggregate()} function in \proglang{R}.  In
+\code{cumulate()}, the ellipsis is a sequence of comma-separated
+\code{name=expression} pairs in the style of \code{summarise()} from the
+\code{dplyr} package.
 
 The output of both functions are of the same form. The columns of the output
 data frame and can schematically be represented as follows. 
@@ -325,7 +322,7 @@ Section~\ref{sect:complex}.
 
 Both functions support two different interfaces for specifying collapsing
 schemes through the \code{collapse} parameter. The first and most general is
-the formula interface, which requires that the collapsing sequence is
+the \class{formula} interface, which requires that the collapsing sequence is
 represented as variables in the data set to be aggregated. The second is a
 tabular interface where each row starts with the one of the lowest-level group
 labels, and subsequent columns contain labels of courser groups.
@@ -334,18 +331,18 @@ labels, and subsequent columns contain labels of courser groups.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{The formula interface}\label{sect:formula}
 We will use the example of Section~\ref{sect:dynamicgrouping} to illustrate
-the formula interface.
+the \class{formula} interface.
 <<>>=
 library(accumulate)
 input <- data.frame(
      A  = c(1,1,1,2,2,2,3,3,3)
    , B  = c(11,11,11,12,12,13,21,22,12)
    , B1 = c(1,1,1,1,1,1,2,2,1)
-   , Y  = 2^(0:8)
+   , Y  = 1:9
 )
 
 cumulate(input, collapse = A*B ~ A*B1 + A
-        , test = function(d) nrow(d) >= 3, tY = sum(Y) )
+        , test = function(d) nrow(d) >= 3, muY = mean(Y) )
 @
 %
 Consider the formula \code{A*B ~ A*B1 + A} in the call to \code{cumulate()}.
@@ -355,7 +352,7 @@ of \code{A*B} does not pass the test, then collapse to \code{A*B1}, and if that
 does not pass the test collapse to \code{A}. If this final grouping also does
 not pass the test, the result is \code{NA}.
 
-Summarizing, the formula interface is always of the following form.
+Summarizing, the \class{formula} interface is always of the following form.
 \begin{verbatim}
   Target grouping ~ Alternative1 + Alternative2 + ... + AlternativeN
 \end{verbatim}
@@ -366,19 +363,19 @@ It is possible to get the same result with \code{accumulate()}. This will cause
 summation over all variables that are not used in the formula object. In the
 below example we also introduce the helper function \code{min_records()}.
 <<>>=
-input$Y2 <- 3^(0:8)
+input$Y2 <- 11:19
 accumulate(input, collapse = A*B ~ A*B1 + A
-          , test = min_records(3), fun = sum)
+          , test = min_records(3), fun = mean)
 @
 This means that for experimentation, users must be careful to exclude categorical
 variables that are not used from the input data set. For example, if \code{B1}
 is not used, we get the following.
 <<>>=
 accumulate(input[-3], collapse = A*B ~ A
-          , test = min_records(3), fun = sum)
+          , test = min_records(3), fun = mean)
 @
 
-The formula interface allows users to quickly experiment with different
+The \class{formula} interface allows users to quickly experiment with different
 collapsing schemes. It does require that all categorical variables have been
 added to the data. As an alternative, one can use the data frame specification,
 which allows for a further separation between defining the collapsing scheme
@@ -419,14 +416,14 @@ usually have a good grasp of which codes can be combined.
 
 The calls to \code{cumulate()} and \code{accumulate()} now look as follows.
 <<>>=
-accumulate(input1, collapse=csh, test = min_records(3), sum)
-cumulate(input1, collapse=csh, test=min_records(3), tY=sum(Y), tY2 = sum(Y2))
+accumulate(input1, collapse=csh, test = min_records(3), mean)
+cumulate(input1, collapse=csh, test=min_records(3), muY=mean(Y), muY2 = mean(Y2))
 @
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Specifying tests}
-The \code{test} parameter of \code{cumulate()} and \code{accumulate} accepts a
+The \code{test} parameter of \code{cumulate()} and \code{accumulate()} accepts a
 function that takes a subset of the data and must returns a boolean. For common
 test conditions, including requiring a minimal number of records, or a minimal
 number or fraction of complete records there are helper functions available.
@@ -470,9 +467,9 @@ We use \code{A*B ~ A*B1 + B1} as collapsing scheme. The function
 \code{accumulate()} (or \code{cumulate()}).
 <<>>=
 accumulate(input, collapse = A*B ~ A*B1 + B1,
-    test = from_validator(rules), fun=sum)
+    test = from_validator(rules), fun=mean)
 @
-Note that for target groups $(A=2,B=21)$ and $(A=2,B=22)$ none of the available
+Note that for target groups $(A=3,B=21)$ and $(A=3,B=22)$ none of the available
 collapsing levels lead to a group that satisfied all conditions. Therefore the
 collapsing level and output variables are all missing (\code{NA}).
 
@@ -482,7 +479,7 @@ data frame, including a dataset with zero rows. The previous example can
 thus also be expressed as follows.
 <<>>=
 my_test <- function(d) nrow(d) >= 3 && sum(d$Y >= 2) >=3
-accumulate(input, collapse = A*B ~ A*B1 + B1, test=my_test, fun=sum)
+accumulate(input, collapse = A*B ~ A*B1 + B1, test=my_test, fun=mean)
 @
 
 It is easy to overlook some edge cases when specifying test functions.
@@ -492,16 +489,16 @@ can assume is that the received data set is a subset of records from the
 dataset to be aggregated. As a service to the user, \pkg{accumulate} exports
 a function that checks a test function against common edge cases, including
 the occurrence of missing values, a dataset with zero rows, and the full
-dataset. The smoke test checks whether the output is \code{TRUE} or \code{FALSE}
+dataset. The function \code{smoke_test()} checks whether the output is \code{TRUE} or \code{FALSE}
 under all circumstances and also reports errors, warnings, and messages.
 It accepts a (realistic) dataset and a testing function and prints
 test results to the console.
 <<>>=
 smoke_test(input, my_test)
 @
-By default only failing tests are printed. In this case our test function
-is not robust against missing values for $Y$. This can be remedied
-by adding \code{na.rm=TRUE} to the \code{sum()} in the test function.
+By default only failing tests are printed. In this case our test function is
+not robust against missing values for $Y$. This can be remedied by passing
+\code{na.rm=TRUE} as parameter to \code{sum()} in the test function.
 <<>>=
 my_test1 <- function(d) nrow(d) >= 3 && sum(d$Y>=2, na.rm=TRUE) >=3 
 smoke_test(input, my_test1)
@@ -543,8 +540,8 @@ relationships. As an example consider a small piece of the NACE classification.
       child {node {\code{0124}}} };
 \end{tikzpicture}
 \end{center}
-Here, the hierarchy suggest to collapsing $\{0111,0112,0113\}$ into $\{011\}$
-(when needed) and similar for the right branch. The second level of collapsing
+Here, the hierarchy suggests to collapse $\{0111,0112,0113\}$ into $\{011\}$
+when needed, and similarly for the right branch. The second level of collapsing
 would combine $\{012\}$ with $\{011\}$ into $\{01\}$. The \pkg{accumulate}
 package comes with a helper function that creates the collapsing scheme from the
 lowest-level digits.
@@ -554,8 +551,8 @@ csh_from_digits(nace, levels=2)
 @ 
 Here, the parameter \code{levels} determines how many collapsing steps will be
 computed. Since all codes are prepended with zero, there is no need to collapse
-01 any further. The output can be used as argument to the \code{collapse}
-parameter of the \code{accumulate()} or \code{cumulate} functions.
+$01$ any further. The output can be used as argument to the \code{collapse}
+parameter of the \code{accumulate()} or \code{cumulate()} functions.
 
 The situation becomes a little more involved when hierarchical classifications
 form a tree such that the distance from leave to trunk is not the same for all
@@ -637,7 +634,7 @@ csh_from_digits(nace,levels=3)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Extensive example: economic data} \label{sect:example}
-In this section we treat three practical examples using a synthetic
+In this section we discuss three practical examples using a synthetic
 dataset included with the package.
 <<>>=
 data(producers)
@@ -746,11 +743,9 @@ of donors and returns a non-empty sample.
 random_element <- function(x) sample(x[!is.na(x)], 1)
 @
 We will use \code{cumulate()} to ensure that there are at least five non-empty
-values in \code{x} when \code{random_element()} is called. 
-
-To make sure we obtain a donor for each record, we add an
-identifying column to use as grouping variable.
-\code{id} column.
+values in \code{x} when \code{random_element()} is called. To make sure we
+obtain a donor for each record, we add an identifying column \code{id} to use
+as grouping variable.  
 <<>>=
 producers <- cbind(id = sprintf("ID%03d",seq_len(nrow(producers)))
                   , producers)
@@ -816,7 +811,7 @@ To analyse a data set group by group we need to specify a data set, a
 way to split it into groups, and a function that takes a subset of data and
 returns an aggregate. Let us introduce some notation for that.
 
-Denote with $U$ be a finite set, and let $\phi:2^U\to X$ be a function that
+Denote with $U$ a finite set, and let $\phi:2^U\to X$ be a function that
 accepts a subset of $U$ and returns a value in some domain $X$.  Here, $U$
 represents a data set, $2^U$ its power set, and $\phi$ an aggregating function.
 We split $U$ into groups using the following notation. Let $A$ be finite set
@@ -830,13 +825,13 @@ also introduce the \emph{pullback along $f$}, $f^*:2^A\to 2^U$ defined as
 \begin{equation*}
 f^*(S) = \{u\in U|f(u)\in S\},
 \end{equation*}
-where $S$ is a subset of $A$ \citep[Section 1.4]{fong2019invitation}.
+where $S$ is a subset of $A$ (See e.g. \citet[Section 1.4]{fong2019invitation}).
 
 In this notation, any split-apply-combine operation can be computed with the
 following algorithm.
 
 \begin{algorithm}[H]
-\caption{Split-Apply-Combine}
+\caption{Split-Apply-Combine: $\textsc{SAC}(U,\phi,f)$}
 \label{alg:sac}
 \SetKwInOut{Input}{Input}\SetKwInOut{Output}{Output}
 \Input{A finite set $U$, an aggregator $\phi: 2^U\to X$, and a partition
@@ -851,29 +846,26 @@ $R = \{\}$\;
 \end{algorithm}
 %
 In this algorithm the output is collected in a set $R$ containing pairs from
-$A\times X$: one pair for each element of $A$. Incidently, the algorithm can be
+$A\times X$: one pair for each element of $A$. (Incidently, the algorithm can be
 summarized even shorter in this notation as $R=\cup_{a\in A}\{(a,(\phi\circ
-f^*)(\{a\}))\}$, where $\circ$ denotes function composition.  Since $f^*$
-always receives a singleton set, its definition as a pullback along $f$ more
-general then necessary for this algorithm.  However, this formulation turns out
-to be necessary when generalizing the algorithm to the case of dynamic
-grouping.
+f^*)(\{a\}))\}$, where $\circ$ denotes function composition).  
 
-It is interesting to see how the elements $U$, $f:U\onto A$, and
-$\phi$ are implemented in practice. Consider the signature of the
-\proglang{R}'s \code{aggregate()} function (we skip arguments that are not
-important for the discussion).
+It is interesting to see how the elements $U$, $f$, and $\phi$ are implemented
+in practice. Consider the signature of the \proglang{R}'s \code{aggregate()}
+function (we skip arguments that are not important for the discussion).
 \begin{verbatim}
   aggregate(x, by, FUN)
 \end{verbatim}
-Here, \code{x} is a data frame where each column is a variable $U$ to be
-aggregated.  The parameter \code{by} is a list of vectors of group labels,
-where each vector has a with a length that equals the number of rows in
-\code{x}. So the function $f:U\onto A$ is implemented by asking
-the user to make sure that the position of each label corresponds to the
-correct row number in the data frame \code{x}. The argument \code{FUN} is the
-function $\phi$ that aggregates each subset of \code{x}.  Here is an example of
-how a user might call this function from the R prompt.
+Here, \code{x} is a data frame where each row represents an element of $U$. The
+parameter \code{by} is a list of vectors of group labels, where each vector has
+a length that equals the number of rows in \code{x}. So the function $f:U\onto
+A$ is implemented by asking the user to make sure that the position of each
+label in \code{by} corresponds to the correct row number in the data frame
+\code{x}. The argument \code{FUN} (of class \class{function}) represents the
+function $\phi$ that aggregates each subset of \code{x}. When the records in
+\code{x} contain more than one variable, the aggregator is applied to each one
+of them.  Here is an example of how a user might call this function from the
+\proglang{R} prompt.
 %
 <<>>=
 aggregate(iris[1:2], by=iris["Species"], FUN=mean)
@@ -888,18 +880,19 @@ unique value in \texttt{Species} column.
 \subsection{Split-apply-combine with collapsing groups}
 \label{sect:saccg}
 The goal of the algorithm is to compute a value for each part of a dataset,
-possibly using values external to the part. The input of the algorithm consists
-again of a finite set $U$ and an aggregation function $\phi$ that takes a
-subset of $U$ and returns a value in some domain $X$.  Compared to
-Algorithm~\ref{alg:sac} two different inputs are needed. First, a function must
-be defined that that checks whether a given subset $d$ of $U$ is suitable for
-computing $\phi(d)$.  We will call this function $\beta: 2^U\to \mathbb{B}$,
-where $\mathbb{B}=\{\texttt{True},\texttt{False}\}$.  Typical tests are
-checking whether there are sufficient records available, or whether certain
-variables have a low enough fraction of missing values. Second, we need a
-\emph{collapsing scheme}
+possibly using values external to the part ---conditional to restrictions
+placed on each part. The input of the algorithm consists again of a finite set
+$U$ and an aggregation function $\phi$ that takes a subset of $U$ and returns a
+value in some domain $X$.  Compared to Algorithm~\ref{alg:sac} two other inputs
+are needed. First, a function must be defined that that checks whether a given
+subset $d$ of $U$ is suitable for computing $\phi(d)$.  We will denote this
+function $\beta: 2^U\to \mathbb{B}$, where
+$\mathbb{B}=\{\texttt{True},\texttt{False}\}$.  Typical tests are checking
+whether there are sufficient records available, or whether certain variables
+have a low enough fraction of missing values. Second, we need a
+\emph{collapsing scheme} $C$, defined as sequence of $n+1$ mappings
 \begin{equation}
-U\xonto{f}A\xonto{f_1}A_1\xonto{f_2}\cdots\xonto{f_n}A_n.
+C\equiv U\xonto{f}A\xonto{f_1}A_1\xonto{f_2}\cdots\xonto{f_n}A_n.
 \label{eq:collapsingsequence}
 \end{equation}
 A collapsing scheme is a sequence of partitions where each $f_i$ partitions its
@@ -916,11 +909,11 @@ Equation~\eqref{eq:collapsingsequence}.  With this notation we can define the
 Algorithm for aggregation with dynamic grouping as follows. 
 
 \begin{algorithm}[H]
-\caption{Split-Apply-Combine with Collapsing Groups}
+\caption{Split-Apply-Combine with Collapsing Groups: $\textsc{SACCG}(U,\phi,\beta,C)$}
 \label{alg:saccg}
 \SetKwInOut{Input}{Input}\SetKwInOut{Output}{Output}
 \Input{A finite set $U$, an aggregator $\phi: 2^U\to X$, a test function $\beta: 2^U\to \mathbb{B}$,
-      and a collapsing sequence $U\xonto{f}A\xonto{f_1}A_1\xonto{f_2}\cdots \xonto{f_n}  A_n$.}
+      and a collapsing sequence $C\equiv U\xonto{f}A\xonto{f_1}A_1\xonto{f_2}\cdots \xonto{f_n}  A_n$.}
 
 \Output{$R$: the value of $\phi$ for every part of $U$, for which a suitable
 collapsing group can be found, as a set of triples $(a,k,x)\in A\times
@@ -963,31 +956,33 @@ algorithm's best case $\Omega(|A|)$. The split-apply-combine with collapsing
 groups algorithm also has best case $\Omega(|A|)$ but has worst case $O(n|A|)$
 (with $n$ the number of collapsing steps). In fact, the best case for
 Algorithm~\ref{alg:saccg} is achieved by setting $\beta:d\mapsto\texttt{True}$.
-It is not hard to see that in this case Algorithm~\ref{alg:saccg} reduces to
-Algorithm~\ref{alg:sac}. The worst case is achieved by setting $\beta: d\mapsto
+In this case Algorithm~\ref{alg:saccg} reduces to Algorithm~\ref{alg:sac}. In
+other words, we have
+%
+\begin{displaymath}
+\textsc{SACCG}(U,\phi,\texttt{True},C) = \textsc{SAC}(U,\phi,f).
+\end{displaymath}
+%
+To see this, observe that in Algorithm~\ref{alg:saccg} the condition in
+line~\ref{line:while} is always \code{False} and the condition in
+line~\ref{line:R} is always \code{True} in this case.
+
+The worst case is achieved by setting $\beta: d\mapsto
 \texttt{False}$. In that case the while loop in Line~\ref{line:while} is
 iterated $n-1$ times (yielding total $n$ executions of $f^*$) while
 Line~\ref{line:R} is never executed.
 
 The analyses above leaves open the question of how the runtime depends on
-application of the pullback $f^*$. First note that there is no difference in
-applying the $f^*$ or $f^*\circ F_i^*\circ F_i$: in practice a nested function
-call is not necessary as the collapsing scheme is fully available as input. The
-pullback performs a lookup of records based on matching one or more attributes
-with a set of attribute values. The time complexity of such operations are
-typically reduced by proper preparation of the dataset. For example, in
-databases one may define indices that speed up certain often-used lookup
-operations (that then may rely on those indices). In the implementation of the
-\code{accumulate()} package the pullback is (currently) implemented using
-standard join operations as implemented by \proglang{R}'s standard
-\code{merge()} function.  This implies that the time complexity of
-\code{accumulate()} and \code{cumulate()} should be multiplied with the time
-dependence of \code{merge()}.
-
-
-
-
-
+application of the pullbacks in both algorithms. First note that there needs to
+be no difference in applying $f^*$ or $f^*\circ F_i^*\circ F_i$: in practice a
+collapsing scheme can be represented in tabular form just like $f$.  The
+pullback then comes down to a lookup of records based on matching one or more
+attributes with a set of attribute values. The time complexity of such
+operations are typically reduced by proper preparation of the dataset. For
+example, databases can be prepared to speed up certain often-used lookup
+operations. In the implementation of the \code{accumulate} package the
+pullback is implemented using standard join operations as
+implemented by \proglang{R}'s standard \code{merge()} function.  
 
 
 
@@ -995,19 +990,24 @@ dependence of \code{merge()}.
 \section{Summary and conclusion}\label{sect:conclusion}
 The \proglang{R} package \code{accumulate} introduced in this paper offers
 convenient interfaces for computing grouped aggregates where the grouping is
-dynamically determined based on a user-defined conditions and a user-defined
-collapsing scheme. We demonstrated that these interfaces can be used in
-situations including multiple grouping variables and complex collapsing
-schemes, as well as situations where multiple variables need to be aggregated
-over. Moreover, the package supports the collection of complex aggregates, such
-as model outputs and offers several service functions that aim to facilitate
-the definition of the collapsing conditions.
+dynamically determined based on user-defined conditions and a user-defined
+group collapsing scheme. We demonstrated that these interfaces can be used in
+several situations, including those where multiple grouping variables are used
+, where complex collapsing schemes are applied, as well as situations where
+multiple variables need to be aggregated over. Conditions on groups of records
+are principally represented by a function, but the package includes several
+convenience functions for defining conditions on record groups. It also
+interfaces with the \pkg{validate} \proglang{R} package to facilitate cases
+where mutliple test conditions must be met. Moreover, the package supports the
+collection of complex aggregates, such as model outputs and offers several
+service functions that aim to facilitate the definition of the collapsing
+conditions.
 
-Finally, the pseudocode underlying the package's main functions has been
-formally analyzed and it is shown that aggregation with collapsing groups can
-be interpreted as a generalization of standard grouped aggregation in a very
-precise sense. We hope that this stimulates broader implementation of this
-algorithm in software offering grouped aggregation.
+The pseudocode underlying the package's main functions has been formally
+analyzed and it is shown that aggregation with collapsing groups can be
+interpreted as a precise generalization of standard grouped aggregation.  We
+hope that this stimulates broader implementation of this algorithm in software
+offering grouped aggregation.
 
 
 
