@@ -28,8 +28,8 @@
 
 %% For Sweave-based articles about R packages:
 %% need no \usepackage{Sweave}
-\SweaveOpts{engine=R, eps=FALSE, keep.source = TRUE}
-<<preliminaries, echo=FALSE, results=hide>>=
+\SweaveOpts{engine = R, eps = FALSE, keep.source = TRUE}
+<<preliminaries, echo=FALSE, results = hide>>=
 options(prompt = "R> ", continue = "+  ", width = 70, useFancyQuotes = FALSE)
 @
 
@@ -127,7 +127,7 @@ package for \proglang{julia} implements split-apply-combine functionality
 In all packages mentioned, the calculation for each group uses data available
 within the group. However, there are valid use cases where a group aggregate is
 determined using attributes from out-of-group entities. One example where this
-occurs is in the area of Small Area Estimation (SAE, see \emph{e.g.}
+occurs is in the area of Small Area Estimation (SAE, see \emph{e.g.},
 \citet{rao2015small, molina2015sae}). Here, one wishes to estimate an aggregate
 for a group, for example a geographical region, or a detailed population
 subset, where the number of (sampled) observations is so small that the variance
@@ -211,7 +211,7 @@ Section~\ref{sect:conclusion}.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Dynamic grouping} \label{sect:dynamicgrouping}
+\section{Dynamic Grouping} \label{sect:dynamicgrouping}
 In this section the illustrate the concept of dynamic grouping with a minimal
 worked example. This example is not very realistic, but it is constructed
 to be simple enough so the whole procedure can be followed in detail. 
@@ -283,7 +283,7 @@ the groups $(A=3, B=22)$ and $(A=3,B=12)$ are collapsed to $(A=2)$.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5%%%%%%%
-\section{The accumulate R package}\label{sect:accumulate}
+\section[R package accumulate]{\proglang{R Package} \pkg{accumulate} }\label{sect:accumulate}
 Grouped aggregation with a fall-though scenario based on a collapsing scheme
 requires a fair amount of specification by the user. Besides the data to be
 aggregated, one needs to specify the method(s) of aggregation, the collapsing
@@ -304,7 +304,7 @@ represents an aggregation function that is applied to every column of
 extra argument to \code{fun}. The interface of \code{accumulate()} is somewhat
 similar to that of the \code{aggregate()} function in \proglang{R}.  In
 \code{cumulate()}, the ellipsis is a sequence of comma-separated
-\code{name=expression} pairs in the style of \code{summarise()} from the
+\code{name = expression} pairs in the style of \code{summarise()} from the
 \code{dplyr} package.
 
 The output of both functions are of the same form. The columns of the output
@@ -329,15 +329,15 @@ labels, and subsequent columns contain labels of courser groups.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{The formula interface}\label{sect:formula}
+\subsection{The Formula Interface}\label{sect:formula}
 We will use the example of Section~\ref{sect:dynamicgrouping} to illustrate
 the \class{formula} interface.
 <<>>=
-library(accumulate)
+library("accumulate")
 input <- data.frame(
-     A  = c(1,1,1,2,2,2,3,3,3)
-   , B  = c(11,11,11,12,12,13,21,22,12)
-   , B1 = c(1,1,1,1,1,1,2,2,1)
+     A  = c( 1,  1,  1,  2,  2,  2,  3,  3,  3)
+   , B  = c(11, 11, 11, 12, 12, 13, 21, 22, 12)
+   , B1 = c( 1,  1,  1,  1,  1,  1,  2,  2,  1)
    , Y  = 1:9
 )
 
@@ -383,7 +383,7 @@ and the actual data processing.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{The data frame interface} \label{sect:dfint}
+\subsection{The Data Frame Interface} \label{sect:dfint}
 The data frame interface is somewhat limited because it only allows for a
 single grouping variable. The advantage however setting up a collapsing scheme
 in the form of a table closely connects to domain knowledge and allows
@@ -395,34 +395,35 @@ B$, so we need to combine that into a single variable, and remove the other
 ones.
 <<>>=
 input1 <- input
-input1$AB <- paste(input$A, input$B, sep="-")
+input1$AB <- paste(input$A, input$B, sep = "-")
 input1 <- input1[-(1:3)]
 input1
 @
 We now define the collapsing scheme as follows.
 <<>>=
 csh <- data.frame(
-  AB  = c("1-11", "2-12","2-13","3-21","3-22","3-12")
-, AB1 = c("1-1" , "2-1" ,"2-1" ,"3-2" ,"3-2" ,"3-1" )
-, A   = c("1"   , "2"   ,"2"   ,"3"   ,"3"   ,"3"   ))
+  AB  = c("1-11", "2-12", "2-13", "3-21", "3-22", "3-12")
+, AB1 = c("1-1" , "2-1" , "2-1" , "3-2" , "3-2" , "3-1" )
+, A   = c("1"   , "2"   , "2"   , "3"   , "3"   , "3"   ))
 csh
 @
 In this data frame, two consecutive columns should be read as a child-parent
 relation. For example, in the first collapsing step the groups defined by
-\code{AB == "2-12"} and \code{AB=="2-13"} both collapse to \code{AB1 == "2-1"}.
+\code{AB == "2-12"} and \code{AB == "2-13"} both collapse to \code{AB1 == "2-1"}.
 In this artificial example the codes do not mean anything, but in realistic
 cases where codes represent a (hierarchical) classification, domain experts
 usually have a good grasp of which codes can be combined. 
 
 The calls to \code{cumulate()} and \code{accumulate()} now look as follows.
 <<>>=
-accumulate(input1, collapse=csh, test = min_records(3), mean)
-cumulate(input1, collapse=csh, test=min_records(3), muY=mean(Y), muY2 = mean(Y2))
+accumulate(input1, collapse = csh, test = min_records(3), mean)
+cumulate(input1, collapse = csh, test = min_records(3)
+        , muY = mean(Y), muY2 = mean(Y2))
 @
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{Specifying tests}
+\subsection{Specifying Tests}
 The \code{test} parameter of \code{cumulate()} and \code{accumulate()} accepts a
 function that takes a subset of the data and must returns a boolean. For common
 test conditions, including requiring a minimal number of records, or a minimal
@@ -431,9 +432,9 @@ number or fraction of complete records there are helper functions available.
 \begin{center}
 \begin{tabular}{lp{9cm}}
 \code{min_records(n)}        & At least $n$ records.\\ 
-\code{min_complete(n,vars)}  & At least $n$ records complete for variables \code{vars}.\\
-\code{frac_complete(r,vars)} & At least $100r$\% complete records for variables \code{vars}.\\
-\code{from_validator(v,...)} & Construct a testing function from a \code{validator} object
+\code{min_complete(n, vars)}  & At least $n$ records complete for variables \code{vars}.\\
+\code{frac_complete(r, vars)} & At least $100r$\% complete records for variables \code{vars}.\\
+\code{from_validator(v, ...)} & Construct a testing function from a \code{validator} object
                                of \proglang{R} package \pkg{validate}.\\
 \end{tabular}
 \end{center}
@@ -448,7 +449,7 @@ list of `data validation rules' stored as a \class{validator} object. A
 group, and that there are at least three records where $Y\geq 2$ we create the
 following ruleset.
 <<>>=
-library(validate)
+library("validate")
 rules <- validator(nrow(.) >= 3, sum(Y >= 2) >= 3)
 rules
 @
@@ -467,7 +468,7 @@ We use \code{A*B ~ A*B1 + B1} as collapsing scheme. The function
 \code{accumulate()} (or \code{cumulate()}).
 <<>>=
 accumulate(input, collapse = A*B ~ A*B1 + B1,
-    test = from_validator(rules), fun=mean)
+    test = from_validator(rules), fun = mean)
 @
 Note that for target groups $(A=3,B=21)$ and $(A=3,B=22)$ none of the available
 collapsing levels lead to a group that satisfied all conditions. Therefore the
@@ -478,8 +479,8 @@ testing function. The requirements are that it must work on any subset of a
 data frame, including a dataset with zero rows. The previous example can
 thus also be expressed as follows.
 <<>>=
-my_test <- function(d) nrow(d) >= 3 && sum(d$Y >= 2) >=3
-accumulate(input, collapse = A*B ~ A*B1 + B1, test=my_test, fun=mean)
+my_test <- function(d) nrow(d) >= 3 && sum(d$Y >= 2) >= 3
+accumulate(input, collapse = A*B ~ A*B1 + B1, test = my_test, fun = mean)
 @
 
 It is easy to overlook some edge cases when specifying test functions.
@@ -498,9 +499,9 @@ smoke_test(input, my_test)
 @
 By default only failing tests are printed. In this case our test function is
 not robust against missing values for $Y$. This can be remedied by passing
-\code{na.rm=TRUE} as parameter to \code{sum()} in the test function.
+\code{na.rm = TRUE} as parameter to \code{sum()} in the test function.
 <<>>=
-my_test1 <- function(d) nrow(d) >= 3 && sum(d$Y>=2, na.rm=TRUE) >=3 
+my_test1 <- function(d) nrow(d) >= 3 && sum(d$Y >= 2, na.rm = TRUE) >= 3 
 smoke_test(input, my_test1)
 @
 The smoke test is aimed at preventing complicated stack traces when errors occur
@@ -511,7 +512,7 @@ certain edge cases.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{Balanced and unbalanced hierarchical classifications}
+\subsection{Balanced and Unbalanced Hierarchical Classifications}
 Hierarchical classifications are abundant in (official) statistics.
 They represent a classification of entities into non-overlapping, nested
 groupings. Examples include the International Standard Industrial Classification
@@ -546,8 +547,9 @@ would combine $\{012\}$ with $\{011\}$ into $\{01\}$. The \pkg{accumulate}
 package comes with a helper function that creates the collapsing scheme from the
 lowest-level digits.
 <<>>=
-nace <- c("0111","0112","0113","0121","0121","0122","0123","0124")
-csh_from_digits(nace, levels=2)
+nace <- c("0111", "0112", "0113", "0121"
+         , "0121", "0122", "0123", "0124")
+csh_from_digits(nace, levels = 2)
 @ 
 Here, the parameter \code{levels} determines how many collapsing steps will be
 computed. Since all codes are prepended with zero, there is no need to collapse
@@ -621,8 +623,8 @@ calculation as well as the interpretation of the results are now uniform
 across all hierarchical classifications. Again, using \code{csh_from_digits()}
 deriving the collapsing scheme can be automated.
 <<>>=
-nace <- c("0111","0112","0113","0121","0122","0123","01241","01242")
-csh_from_digits(nace,levels=3)
+nace <- c("0111", "0112", "0113", "0121", "0122", "0123", "01241", "01242")
+csh_from_digits(nace, levels = 3)
 @
 
 
@@ -633,11 +635,11 @@ csh_from_digits(nace,levels=3)
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Extensive example: economic data} \label{sect:example}
+\section{Extensive Example: Economic Data} \label{sect:example}
 In this section we discuss three practical examples using a synthetic
 dataset included with the package.
 <<>>=
-data(producers)
+data("producers")
 head(producers)
 @
 This \code{producers} dataset contains synthetic data records of various income
@@ -645,7 +647,7 @@ sources for \Sexpr{nrow(producers)} industrial produces. The records are
 classified into a local version of the NACE classification called \code{sbi}
 and into \code{size} classes with values in $\{5,6,7,8,9\}$. 
 
-\subsection{Small area estimation} 
+\subsection{Small Area Estimation} 
 Small area estimation (SAE) is a collection of methods that are aimed at
 estimating subpopulation parameters in cases where there the number of
 observations in a subpopulation is so mall that direct estimation leads to
@@ -666,16 +668,16 @@ records for which turnover has been measured. The collapsing scheme is given by
 classification by respectively the first two SBI digits and the first SBI
 digit. We first add those variables to the dataset.
 <<>>=
-producers$sbi2 <- substr(producers$sbi,1,2)
-producers$sbi1 <- substr(producers$sbi,1,1)
+producers$sbi2 <- substr(producers$sbi, 1, 2)
+producers$sbi1 <- substr(producers$sbi, 1, 1)
 head(producers, 3)
 @
 Using \code{cumulate()} we obtain the means. 
 <<>>=
 a <- cumulate(producers
              , collapse = sbi*size ~ sbi + sbi2 + sbi1
-             , test = min_complete(n=10, vars="industrial")
-             , mean_industrial = mean(industrial, na.rm=TRUE))
+             , test = min_complete(n = 10, vars = "industrial")
+             , mean_industrial = mean(industrial, na.rm = TRUE))
 head(a,3)
 @
 
@@ -684,7 +686,7 @@ on the level of respectively \code{sbi}, \code{sbi2} and \code{sbi1} introduce
 an acceptable bias.
 
 
-\subsection{Imputing missing values using SAE and ratio imputation} \label{sect:ratio}
+\subsection{Imputing Missing Values Using SAE and Ratio Imputation} \label{sect:ratio}
 Our goal in this example is to impute missing values for the \code{industrial}
 variable based on ratio imputation with \code{total} as predictor.  Ratio
 imputation is a method where the imputed value $\hat{y}_i$ for variable $Y$ of
@@ -699,30 +701,30 @@ package \citep{loo2022simputation} to impute the missing values.
 <<>>=
 r <- cumulate(producers
          , collapse = sbi*size ~ sbi + sbi2 + sbi1
-         , test = min_complete(n=10, vars="industrial")
-         , R = mean(industrial, na.rm=TRUE)/mean(total, na.rm=TRUE))
+         , test = min_complete(n = 10, vars = "industrial")
+         , R = mean(industrial, na.rm = TRUE)/mean(total, na.rm = TRUE))
 head(r,3)
 @
 To impute the values, using \code{impute_proxy()} we need to merge the ratios
 with the producers dataset (which automatically happens by SBI and size class).
 <<>>=
-library(simputation)
+library("simputation")
 dat <- merge(producers, r)
 dat <- impute_proxy(dat, industrial ~ R*total)
 @
 We can inspect the imputed values as follows.
 <<>>=
 iNA <- is.na(producers$industrial)
-head(dat[iNA, c("sbi","size","level","R","industrial","total")])
+head(dat[iNA, c("sbi", "size", "level", "R", "industrial", "total")])
 @
-From this, we have all the information to interpret the imputed values. For
+From this, we get all the information to interpret the imputed values. For
 example, we see that in record 664, the ratio was estimated after collapsing
 the group $(\texttt{sbi},\texttt{size})=(21122,7)$ to $\texttt{sbi2}=21$ since
 the collapse \code{level} equals 2.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{Random Nearest neighbours imputation with collapsing groups}
+\subsection{Random Nearest Neighbours Imputation with Collapsing Groups}
 Nearest neighbor (NN) imputation is a donor imputation method where the
 imputation value is copied from a record that is (randomly) chosen from a donor
 pool \citep{andridge2010review}. In this example we use the grouping variables
@@ -740,14 +742,14 @@ in the previous Section.
 We first define an `aggregation' function that takes a vector 
 of donors and returns a non-empty sample.
 <<>>=
-random_element <- function(x) sample(x[!is.na(x)], 1)
+random_element <- function(x) sample(x[ !is.na(x)], 1)
 @
 We will use \code{cumulate()} to ensure that there are at least five non-empty
 values in \code{x} when \code{random_element()} is called. To make sure we
 obtain a donor for each record, we add an identifying column \code{id} to use
 as grouping variable.  
 <<>>=
-producers <- cbind(id = sprintf("ID%03d",seq_len(nrow(producers)))
+producers <- cbind(id = sprintf("ID%03d", seq_len(nrow(producers)))
                   , producers)
 set.seed(111)
 imputations <- cumulate(producers
@@ -763,9 +765,9 @@ for imputation.
 <<>>=
 imputed <- merge(producers, imputations) |>
            impute_proxy(trade ~ donor_trade)
-cols <- c(1:3,9:10,5)
-head(producers[cols],3)
-head(imputed[c(cols,11)],3)
+cols <- c(1:3, 9:10, 5)
+head(producers[cols], 3)
+head(imputed[c(cols, 11)], 3)
 @
 The merge operation automatically merges on the \code{id} column, which also
 adds the \code{level} column to the output.  The function \code{impute_proxy}
@@ -776,7 +778,7 @@ In the last expressions we only print the columns of interest.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{Computing complex aggregates} \label{sect:complex}
+\subsection{Computing Complex Aggregates} \label{sect:complex}
 Until now, the aggregates have been simple (scalar) values.  With the
 \code{cumulate()} function it is also possible to specify complex aggregates that
 go beyond simple aggregates. Below, we estimate the following linear model
@@ -788,7 +790,7 @@ variable are available.
 <<>>=
 r <- cumulate(producers
          , collapse = sbi*size ~ sbi + sbi2 + sbi1
-         , test = min_complete(n=10, vars=c("total","industrial"))
+         , test = min_complete(n = 10, vars = c("total","industrial"))
          , model = lm(total ~ industrial))
 head(r,3)
 @
@@ -800,13 +802,13 @@ print method.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Formal description and algorithms} \label{sect:algorithm}
+\section{Formal Description and Algorithms} \label{sect:algorithm}
 In this section we give a formal description of the algorithm for aggregation
 with dynamic grouping.  We start by giving an algorithm for ordinary
 split-apply-combine to demonstrate how the algorithm must be generalized to
 allow for a collapsing scheme.
 
-\subsection{Split-apply-combine}
+\subsection{Split-Apply-Combine}
 To analyse a data set group by group we need to specify a data set, a
 way to split it into groups, and a function that takes a subset of data and
 returns an aggregate. Let us introduce some notation for that.
@@ -825,7 +827,7 @@ also introduce the \emph{pullback along $f$}, $f^*:2^A\to 2^U$ defined as
 \begin{equation*}
 f^*(S) = \{u\in U|f(u)\in S\},
 \end{equation*}
-where $S$ is a subset of $A$ (See e.g. \citet[Section 1.4]{fong2019invitation}).
+where $S$ is a subset of $A$ (See \emph{e.g.}, \citet[Section 1.4]{fong2019invitation}).
 
 In this notation, any split-apply-combine operation can be computed with the
 following algorithm.
@@ -840,7 +842,7 @@ following algorithm.
         $(a,x)\in A\times X$. }
 $R = \{\}$\;
 \For{$a\in A$}{
-  $d=f^*(\{a\})$\tcp*{get subset of $U$}
+  $d = f^*(\{a\})$\tcp*{get subset of $U$}
   $R = R\cup \{(a,\phi(d))\}$\tcp*{aggregate and add to result}
 }
 \end{algorithm}
@@ -868,7 +870,7 @@ of them.  Here is an example of how a user might call this function from the
 \proglang{R} prompt.
 %
 <<>>=
-aggregate(iris[1:2], by=iris["Species"], FUN=mean)
+aggregate(iris[1:2], by = iris["Species"], FUN = mean)
 @
 %
 Note that the correspondence in position of the \texttt{Species} label and the
@@ -877,7 +879,7 @@ output also reveals in the first column the set $A$: each row corresponds to a
 unique value in \texttt{Species} column.
 
 
-\subsection{Split-apply-combine with collapsing groups}
+\subsection{Split-Apply-Combine with Collapsing Groups}
 \label{sect:saccg}
 The goal of the algorithm is to compute a value for each part of a dataset,
 possibly using values external to the part ---conditional to restrictions
@@ -905,7 +907,7 @@ composition $f_k\circ f_{k-1}\circ\cdots \circ f_1$. Similarly we define the
 pullback along $F_k$ as $F_k^* = f_1^*\circ f_2^*\circ\cdots\circ f_k^*$.  This
 function accepts a set of labels in $A_k$ and returns all the labels in $A$
 that are mapped to those labels via the collapsing sequence of
-Equation~\eqref{eq:collapsingsequence}.  With this notation we can define the
+Equation~\ref{eq:collapsingsequence}.  With this notation we can define the
 Algorithm for aggregation with dynamic grouping as follows. 
 
 \begin{algorithm}[H]
@@ -987,7 +989,7 @@ implemented by \proglang{R}'s standard \code{merge()} function.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Summary and conclusion}\label{sect:conclusion}
+\section{Summary and Conclusion}\label{sect:conclusion}
 The \proglang{R} package \code{accumulate} introduced in this paper offers
 convenient interfaces for computing grouped aggregates where the grouping is
 dynamically determined based on user-defined conditions and a user-defined

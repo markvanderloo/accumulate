@@ -1,5 +1,5 @@
 #' @name producers
-#' @title synthetic data on producers
+#' @title Synthetic data on producers
 #' @description 
 #'   A synthetic dataset listing several sources of turnover
 #'   and other income for producers. The producers are classified
