@@ -114,7 +114,7 @@ frac_complete <- function(r, vars=TRUE){
 #'
 #' @examples
 #'
-#' if (requireNamespace("validate", quitetly=TRUE)){
+#' if (requireNamespace("validate", quietly=TRUE)){
 #'  v <- validator(height >= 0, weight >= 0)
 #'  f <- from_validator(v)
 #'  f(women)  # TRUE (all heights and weights are nonnegative)

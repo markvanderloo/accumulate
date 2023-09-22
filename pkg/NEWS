@@ -1,4 +1,6 @@
+
 version 0.9.1
+- Fixed example for 'from_validator' in documentation.
 - Better checking of formula specification of collapsing scheme.
 
 vesion 0.9.0
