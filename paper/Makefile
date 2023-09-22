@@ -7,6 +7,9 @@ article.pdf: article.Rnw refs.bib
 	pdflatex article.tex
 	xdg-open article.pdf&
 
+article.R: article.Rnw
+	R -s -e "Stangle('article.Rnw')"
+
 clean:
 	rm -f *.aux *.log *.blg *.bbl *.out
 
