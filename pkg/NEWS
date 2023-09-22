@@ -2,6 +2,8 @@
 version 0.9.1
 - Fixed example for 'from_validator' in documentation.
 - Better checking of formula specification of collapsing scheme.
+- Improvements in documentation (thanks to the JSS editorial 
+  team for pointing them out).
 
 vesion 0.9.0
 - Package now supports complex objects as aggregation output
@@ -13,3 +15,4 @@ version 0.8.1
 
 version 0.8.0
 - First CRAN release attempt
+

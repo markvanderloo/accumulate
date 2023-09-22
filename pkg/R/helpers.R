@@ -1,6 +1,6 @@
 
 
-#' Demand minimal number of functons
+#' Demand minimal number of records 
 #' 
 #' @param n Minimal number of records in a group.
 #'
@@ -90,10 +90,11 @@ frac_complete <- function(r, vars=TRUE){
   function(d) mean(complete_cases(d[vars])) >= r
 }
 
-#' Use a validate::validator object to test a group
+#' Use a validate::validator object to define a test
 #'
-#' Returns \code{TRUE} when the data passes all checks defined in the
-#' \code{validator} object, otherwise \code{FALSE}.
+#' Create a test function that accepts a data.frame, and returns \code{TRUE}
+#' when the data passes all checks defined in the \code{validator} object, and
+#' otherwise \code{FALSE}.
 #'
 #' @param v \code{[validator]} a validator object from the
 #'        \code{validate} package.
@@ -133,7 +134,7 @@ from_validator <- function(v,...){
 
 
 
-#' Derive collapsing scheme from hierarchical classification
+#' Derive collapsing scheme from a hierarchical classification
 #'
 #' Derive a collapsing scheme where group labels collapse to their
 #' parents in the hierarchy.
@@ -170,13 +171,13 @@ csh_from_digits <- function(x, levels=max(nchar(x))-1){
   as.data.frame(A)[1:(levels+1)]
 }
 
-#' Test your testing function for common edge cases
+#' Check your testing function against common edge cases
 #'
 #' Writing a testing function that works on any subset of records of a
 #' dataframe can be quite subtle. This function tries the testing function on a
 #' number of common (edge) cases that are easily overlooked.  It is \emph{not}
 #' a unit test: a smoke test will not tell you whether your output is correct.
-#' It only checks the output data type (mustbe \code{TRUE} or \code{FALSE} and
+#' It only checks the output data type (must be \code{TRUE} or \code{FALSE} and
 #' reports if errors, warnings, or messages occur.
 #'
 #' @param dat an example dataset. For example the full dataset
