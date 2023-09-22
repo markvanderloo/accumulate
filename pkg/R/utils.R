@@ -36,6 +36,7 @@ print.object_list <- function(x,...) print(format.object_list(x,...))
 
 #' @rdname object_list
 #' @export
+#' @keywords internal
 `[.object_list` <- function(x,i,j,...,drop=TRUE){
   object_list(unclass(x)[i])
 }

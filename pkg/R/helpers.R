@@ -243,15 +243,12 @@ try_this <- function(d, f, verbose, info){
          )
     , error   = function(e) err <<- append(err, e$message)
   )
-  print(smoke(list(result=out, msg=msg, wrn=wrn, err=err, info=info)),verbose=verbose)
+  print_smoke(list(result=out, msg=msg, wrn=wrn, err=err, info=info), verbose=verbose)
   invisible(length(err) == 0)
 }
 
-smoke <- function(x){
-  structure(x,class="smoke")
-}
 
-print.smoke <- function(x, verbose){
+print_smoke <- function(x, verbose){
   if (isTRUE(x$result)|| isFALSE(x$result)){
     if(verbose) catf("\nTest with %s: OK", x$info)
   } else {
