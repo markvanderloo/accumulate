@@ -341,14 +341,14 @@ input <- data.frame(
    , Y  = 1:9
 )
 
-cumulate(input, collapse = A*B ~ A*B1 + A
+cumulate(input, collapse = A * B ~ A * B1 + A
         , test = function(d) nrow(d) >= 3, muY = mean(Y) )
 @
 %
-Consider the formula \code{A*B ~ A*B1 + A} in the call to \code{cumulate()}.
-The left-hand-side \code{A*B} is the target output grouping. The
+Consider the formula \code{A * B ~ A * B1 + A} in the call to \code{cumulate()}.
+The left-hand-side \code{A * B} is the target output grouping. The
 right-hand-side is to be interpreted as the collapsing sequence: if an instance
-of \code{A*B} does not pass the test, then collapse to \code{A*B1}, and if that
+of \code{A * B} does not pass the test, then collapse to \code{A * B1}, and if that
 does not pass the test collapse to \code{A}. If this final grouping also does
 not pass the test, the result is \code{NA}.
 
@@ -364,14 +364,14 @@ summation over all variables that are not used in the formula object. In the
 below example we also introduce the helper function \code{min_records()}.
 <<>>=
 input$Y2 <- 11:19
-accumulate(input, collapse = A*B ~ A*B1 + A
+accumulate(input, collapse = A * B ~ A * B1 + A
           , test = min_records(3), fun = mean)
 @
 This means that for experimentation, users must be careful to exclude categorical
 variables that are not used from the input data set. For example, if \code{B1}
 is not used, we get the following.
 <<>>=
-accumulate(input[-3], collapse = A*B ~ A
+accumulate(input[-3], collapse = A * B ~ A
           , test = min_records(3), fun = mean)
 @
 
@@ -463,11 +463,11 @@ the first few records.
 <<>>=
 head(input, 4)
 @
-We use \code{A*B ~ A*B1 + B1} as collapsing scheme. The function
+We use \code{A * B ~ A * B1 + B1} as collapsing scheme. The function
 \code{from_validator} passes the requirements as a test function to
 \code{accumulate()} (or \code{cumulate()}).
 <<>>=
-accumulate(input, collapse = A*B ~ A*B1 + B1,
+accumulate(input, collapse = A * B ~ A * B1 + B1,
     test = from_validator(rules), fun = mean)
 @
 Note that for target groups $(A=3,B=21)$ and $(A=3,B=22)$ none of the available
@@ -480,7 +480,7 @@ data frame, including a dataset with zero rows. The previous example can
 thus also be expressed as follows.
 <<>>=
 my_test <- function(d) nrow(d) >= 3 && sum(d$Y >= 2) >= 3
-accumulate(input, collapse = A*B ~ A*B1 + B1, test = my_test, fun = mean)
+accumulate(input, collapse = A * B ~ A * B1 + B1, test = my_test, fun = mean)
 @
 
 It is easy to overlook some edge cases when specifying test functions.
@@ -664,7 +664,7 @@ the mean over a larger subpopulation that includes the target subpopulation
 by simple random sampling from the population, the mean can be estimated with
 the sample mean. In this example we will demand that there are at least ten
 records for which turnover has been measured. The collapsing scheme is given by
-\code{sbi*size ~ sbi + sbi2 + sbi1} where \code{sbi2} and \code{sbi1} are
+\code{sbi * size ~ sbi + sbi2 + sbi1} where \code{sbi2} and \code{sbi1} are
 classification by respectively the first two SBI digits and the first SBI
 digit. We first add those variables to the dataset.
 <<>>=
@@ -675,7 +675,7 @@ head(producers, 3)
 Using \code{cumulate()} we obtain the means. 
 <<>>=
 a <- cumulate(producers
-             , collapse = sbi*size ~ sbi + sbi2 + sbi1
+             , collapse = sbi * size ~ sbi + sbi2 + sbi1
              , test = min_complete(n = 10, vars = "industrial")
              , mean_industrial = mean(industrial, na.rm = TRUE))
 head(a,3)
@@ -700,7 +700,7 @@ We use SAE to estimate the subpopulation ratios, and then use the \code{simputat
 package \citep{loo2022simputation} to impute the missing values. 
 <<>>=
 r <- cumulate(producers
-         , collapse = sbi*size ~ sbi + sbi2 + sbi1
+         , collapse = sbi * size ~ sbi + sbi2 + sbi1
          , test = min_complete(n = 10, vars = "industrial")
          , R = mean(industrial, na.rm = TRUE)/mean(total, na.rm = TRUE))
 head(r,3)
@@ -710,7 +710,7 @@ with the producers dataset (which automatically happens by SBI and size class).
 <<>>=
 library("simputation")
 dat <- merge(producers, r)
-dat <- impute_proxy(dat, industrial ~ R*total)
+dat <- impute_proxy(dat, industrial ~ R * total)
 @
 We can inspect the imputed values as follows.
 <<>>=
@@ -753,7 +753,7 @@ producers <- cbind(id = sprintf("ID%03d", seq_len(nrow(producers)))
                   , producers)
 set.seed(111)
 imputations <- cumulate(producers
-                 , collapse = id ~ sbi*size + sbi + sbi2 + sbi1
+                 , collapse = id ~ sbi * size + sbi + sbi2 + sbi1
                  , test = min_complete(5,"trade")
                  , donor_trade = random_element(trade))
 
@@ -789,7 +789,7 @@ demanding that there are at least 10 records where both predictor and predicted
 variable are available.
 <<>>=
 r <- cumulate(producers
-         , collapse = sbi*size ~ sbi + sbi2 + sbi1
+         , collapse = sbi * size ~ sbi + sbi2 + sbi1
          , test = min_complete(n = 10, vars = c("total","industrial"))
          , model = lm(total ~ industrial))
 head(r,3)
