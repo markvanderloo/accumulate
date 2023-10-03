@@ -5,7 +5,7 @@ article.pdf: article.Rnw refs.bib
 	bibtex article
 	pdflatex article.tex
 	pdflatex article.tex
-	xdg-open article.pdf&
+	evince article.pdf&
 
 article.R: article.Rnw
 	R -s -e "Stangle('article.Rnw')"
