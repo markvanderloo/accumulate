@@ -1,0 +1,110 @@
+JSS 5097:
+Split-Apply-Combine with Dynamic Grouping
+Mark P.J. van der Loo
+---------------------------------------------------------
+For further instructions on JSS style requirements please see the Style Files (in particular section 2.1 Style Checklist of jss.pdf) and FAQ at http://www.jstatsoft.org/about/submissions.
+
+For further examples please see RECENT JSS papers.
+---------------------------------------------------------
+
+Manuscript style comments:
+
+
+o \section, \subsection, etc. should be in sentence style (see http://www.jstatsoft.org/about/submissions), e.g.,
+2. Dynamic Grouping
+3. R Package accumulate
+4. Extensive Example: Economic Data
+5. Formal Description and Algorithms
+3.1. The Formula Interface
+3.2. The Data Frame Interface
+3.3. Specifying Tests
+3.4. Balanced and Unbalanced Hierarchical Classiﬁcations
+4.1. Small Area Estimation
+4.2. Imputing Missing Values Using SAE and Ratio Imputation
+4.3. Random Nearest Neighbours Imputation with Collapsing Groups
+4.4. Computing Complex Aggregates
+
+==> DONE
+
+
+o For the code layout in R publications, we typically distinguish input/output
+using Sinput/Soutput (or equivalently CodeInput/CodeOutput). Unless there are
+special reasons to format it differently, the input should use the text width
+(up to 76 or 77 characters) and be indented by two spaces, e.g., Do not start
+each new line with a comma
+
+begin{Sinput}
+R> example_model <- lm(response ~ variable1 + variable2 + variable3, 
++    weights = w, data = mydata)
+\end{Sinput}
+
+> cumulate(input, collapse = A*B ~ A*B1 + A
++
+
+>= 3,
+> input$Y2 <- 11:19
+
+> accumulate(input, collapse = A*B ~ A*B1 + A
++
+
+> accumulate(input[-3], collapse = A*B ~ A
++
+
+> input1 <-
+> input1$AB <- paste(input$A, input$B, sep = "-"
+> input1 <- input1[-(1:3)
+> input1
+
+==> DONE
+
+o Code should have enough spaces to facilitate reading.  Please include spaces before and after operators and after commas (unless spaces have syntactical meaning).
+
+o If using "e.g." and "i.e." add a comma after the period to keep LaTeX from interpreting them as the end of a sentence, i.e.: "e.g., " and "i.e., "
+
+
+
+
+o The rule for capitalizing the starting letters of Figure, Section and Table is as follows: If you are referring to a particular figure/section/table then capitalize the first letter, otherwise use a lower-case first letter. For example, something shown in Section 4 vs. there are three sections in this paper. All of your figures and tables should be in the dedicated environment, with proper captions and labels 
+
+\begin{figure}
+Figure
+\caption{}
+\label{}
+\end{figure}
+
+
+o Figures, tables and equations should be marked with a \label and referred to by \ref, e.g., Figure~\ref{...}.
+
+o All captions should appear below the corresponding figure/table. The captions should be in sentence style and end with a period.  No additional formatting (such as \emph, f or \it) should be used for the caption.
+
+o All table row/column headers should also be in sentence style. There should not be further footnote-style annotations in tables; these should all be placed in the caption.
+
+o Equations should be marked with a \label and referred to by either
+	Equation~\ref{...} (with capitalization, without parentheses)
+		or
+	(\ref({...})
+with the former being preferred if the number of equation references is not too large.
+
+
+o Abbreviations should be spelled in upper-case letters without additional formatting (i.e., without periods, without small caps, italics, etc.).  All abbreviations should be introduced with their expansion where the expansion should not be capitalized.
+
+
+o As a reminder, please make sure that:
+	- \proglang, \pkg and \code have been used for highlighting throughout the paper (including titles and references), except where explicitly escaped.
+
+
+References:
+
+
+
+o As a reminder,
+	- Please make sure that all software packages are \cite{}'d properly.
+
+	- All references should be in title style.
+
+	- See FAQ for specific reference instructions.
+
+
+Code:
+
+o As a reminder, please make sure that the files needed to replicate all code/examples within the manuscript are included in a standalone replication script.

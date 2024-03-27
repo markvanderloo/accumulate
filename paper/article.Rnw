@@ -365,15 +365,15 @@ summation over all variables that are not used in the formula object. In the
 below example we also introduce the helper function \code{min_records()}.
 <<>>=
 input$Y2 <- 11:19
-accumulate(input, collapse = A * B ~ A * B1 + A
-          , test = min_records(3), fun = mean)
+accumulate(input, collapse = A * B ~ A * B1 + A, 
+  test = min_records(3), fun = mean)
 @
 This means that for experimentation, users must be careful to exclude categorical
 variables that are not used from the input data set. For example, if \code{B1}
 is not used, we get the following.
 <<>>=
-accumulate(input[-3], collapse = A * B ~ A
-          , test = min_records(3), fun = mean)
+accumulate(input[-3], collapse = A * B ~ A,
+  test = min_records(3), fun = mean)
 @
 
 The \class{formula} interface allows users to quickly experiment with different
@@ -403,9 +403,9 @@ input1
 We now define the collapsing scheme as follows.
 <<>>=
 csh <- data.frame(
-  AB  = c("1-11", "2-12", "2-13", "3-21", "3-22", "3-12")
-, AB1 = c("1-1" , "2-1" , "2-1" , "3-2" , "3-2" , "3-1" )
-, A   = c("1"   , "2"   , "2"   , "3"   , "3"   , "3"   ))
+  AB  = c("1-11", "2-12", "2-13", "3-21", "3-22", "3-12"),
+  AB1 = c("1-1" , "2-1" , "2-1" , "3-2" , "3-2" , "3-1" ),
+  A   = c("1"   , "2"   , "2"   , "3"   , "3"   , "3"   ))
 csh
 @
 In this data frame, two consecutive columns should be read as a child-parent
@@ -418,8 +418,8 @@ usually have a good grasp of which codes can be combined.
 The calls to \code{cumulate()} and \code{accumulate()} now look as follows.
 <<>>=
 accumulate(input1, collapse = csh, test = min_records(3), mean)
-cumulate(input1, collapse = csh, test = min_records(3)
-        , muY = mean(Y), muY2 = mean(Y2))
+cumulate(input1, collapse = csh, test = min_records(3),
+  muY = mean(Y), muY2 = mean(Y2))
 @
 
 
@@ -481,7 +481,8 @@ data frame, including a dataset with zero rows. The previous example can
 thus also be expressed as follows.
 <<>>=
 my_test <- function(d) nrow(d) >= 3 && sum(d$Y >= 2) >= 3
-accumulate(input, collapse = A * B ~ A * B1 + B1, test = my_test, fun = mean)
+accumulate(input, collapse = A * B ~ A * B1 + B1,
+  test = my_test, fun = mean)
 @
 
 It is easy to overlook some edge cases when specifying test functions.
@@ -548,8 +549,7 @@ would combine $\{012\}$ with $\{011\}$ into $\{01\}$. The \pkg{accumulate}
 package comes with a helper function that creates the collapsing scheme from the
 lowest-level digits.
 <<>>=
-nace <- c("0111", "0112", "0113", "0121"
-         , "0121", "0122", "0123", "0124")
+nace <- c("0111", "0112", "0113", "0121", "0121", "0122", "0123", "0124")
 csh_from_digits(nace, levels = 2)
 @ 
 Here, the parameter \code{levels} determines how many collapsing steps will be
@@ -675,10 +675,10 @@ head(producers, 3)
 @
 Using \code{cumulate()} we obtain the means. 
 <<>>=
-a <- cumulate(producers
-             , collapse = sbi * size ~ sbi + sbi2 + sbi1
-             , test = min_complete(n = 10, vars = "industrial")
-             , mean_industrial = mean(industrial, na.rm = TRUE))
+a <- cumulate(producers,
+  collapse = sbi * size ~ sbi + sbi2 + sbi1,
+  test = min_complete(n = 10, vars = "industrial"),
+  mean_industrial = mean(industrial, na.rm = TRUE))
 head(a,3)
 @
 
@@ -700,10 +700,10 @@ are estimated subpopulation means.
 We use SAE to estimate the subpopulation ratios, and then use the \code{simputation}
 package \citep{loo2022simputation} to impute the missing values. 
 <<>>=
-r <- cumulate(producers
-         , collapse = sbi * size ~ sbi + sbi2 + sbi1
-         , test = min_complete(n = 10, vars = "industrial")
-         , R = mean(industrial, na.rm = TRUE)/mean(total, na.rm = TRUE))
+r <- cumulate(producers,
+  collapse = sbi * size ~ sbi + sbi2 + sbi1,
+  test = min_complete(n = 10, vars = "industrial"),
+  R = mean(industrial, na.rm = TRUE)/mean(total, na.rm = TRUE))
 head(r,3)
 @
 To impute the values, using \code{impute_proxy()} we need to merge the ratios
@@ -765,7 +765,7 @@ original dataset and use \code{impute_proxy()} of the \pkg{simputation} package
 for imputation.
 <<>>=
 imputed <- merge(producers, imputations) |>
-           impute_proxy(trade ~ donor_trade)
+  impute_proxy(trade ~ donor_trade)
 cols <- c(1:3, 9:10, 5)
 head(producers[cols], 3)
 head(imputed[c(cols, 11)], 3)
@@ -789,10 +789,10 @@ go beyond simple aggregates. Below, we estimate the following linear model
 demanding that there are at least 10 records where both predictor and predicted
 variable are available.
 <<>>=
-r <- cumulate(producers
-         , collapse = sbi * size ~ sbi + sbi2 + sbi1
-         , test = min_complete(n = 10, vars = c("total","industrial"))
-         , model = lm(total ~ industrial))
+r <- cumulate(producers,
+  collapse = sbi * size ~ sbi + sbi2 + sbi1,
+  test = min_complete(n = 10, vars = c("total","industrial")),
+  model = lm(total ~ industrial))
 head(r,3)
 @
 Here, the last column is a list of class \code{object_list}, where each
