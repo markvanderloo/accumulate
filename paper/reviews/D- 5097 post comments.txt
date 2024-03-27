@@ -129,7 +129,12 @@ o As a reminder,
 
 	- See FAQ for specific reference instructions.
 
+==> DONE
 
 Code:
 
-o As a reminder, please make sure that the files needed to replicate all code/examples within the manuscript are included in a standalone replication script.
+o As a reminder, please make sure that the files needed to replicate all
+code/examples within the manuscript are included in a standalone replication
+script.
+
+==> DONE
