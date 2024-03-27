@@ -1,5 +1,6 @@
 \documentclass[article,table]{jss}
 
+
 %% -- LaTeX packages and custom commands ---------------------------------------
 %% recommended packages
 \usepackage{orcidlink,thumbpdf,lmodern}
@@ -283,17 +284,17 @@ the groups $(A=3, B=22)$ and $(A=3,B=12)$ are collapsed to $(A=2)$.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5%%%%%%%
-\section[R package accumulate]{\proglang{R Package} \pkg{accumulate} }\label{sect:accumulate}
+\section[R Package accumulate]{\proglang{R Package} \pkg{accumulate} }\label{sect:accumulate}
 Grouped aggregation with a fall-though scenario based on a collapsing scheme
 requires a fair amount of specification by the user. Besides the data to be
 aggregated, one needs to specify the method(s) of aggregation, the collapsing
 scheme, and the condition to decide whether a subset is fit for aggregation or
 a next collapse is necessary. There are two main functions in \pkg{accumulate}
 that offer slightly different interfaces.
-\begin{verbatim}
+\begin{Code}
   accumulate(data, collapse, test, fun, ...)
   cumulate(data, collapse, test, ...)
-\end{verbatim}
+\end{Code}
 Here \texttt{data} is a data frame holding data to be aggregated;
 \texttt{collapse} represents the collapse sequence (as a \class{formula} or a
 \class{data frame}), and \texttt{test} is a function that accepts a subset of
@@ -309,9 +310,9 @@ similar to that of the \code{aggregate()} function in \proglang{R}.  In
 
 The output of both functions are of the same form. The columns of the output
 data frame and can schematically be represented as follows. 
-\begin{verbatim}
+\begin{Code}
   [Grouping Variables, Collapse level, Output aggregates]
-\end{verbatim}
+\end{Code}
 The first columns represent the variables that define the output grouping, the
 next column is an integer that indicates the level of collapsing used to
 compute the aggregate (0 indicating no collapse), and the last set of columns
@@ -335,10 +336,10 @@ the \class{formula} interface.
 <<>>=
 library("accumulate")
 input <- data.frame(
-     A  = c( 1,  1,  1,  2,  2,  2,  3,  3,  3)
-   , B  = c(11, 11, 11, 12, 12, 13, 21, 22, 12)
-   , B1 = c( 1,  1,  1,  1,  1,  1,  2,  2,  1)
-   , Y  = 1:9
+  A  = c( 1,  1,  1,  2,  2,  2,  3,  3,  3),
+  B  = c(11, 11, 11, 12, 12, 13, 21, 22, 12),
+  B1 = c( 1,  1,  1,  1,  1,  1,  2,  2,  1),
+  Y  = 1:9
 )
 
 cumulate(input, collapse = A * B ~ A * B1 + A
@@ -353,9 +354,9 @@ does not pass the test collapse to \code{A}. If this final grouping also does
 not pass the test, the result is \code{NA}.
 
 Summarizing, the \class{formula} interface is always of the following form.
-\begin{verbatim}
+\begin{Code}
   Target grouping ~ Alternative1 + Alternative2 + ... + AlternativeN
-\end{verbatim}
+\end{Code}
 
 
 
@@ -855,9 +856,9 @@ f^*)(\{a\}))\}$, where $\circ$ denotes function composition).
 It is interesting to see how the elements $U$, $f$, and $\phi$ are implemented
 in practice. Consider the signature of the \proglang{R}'s \code{aggregate()}
 function (we skip arguments that are not important for the discussion).
-\begin{verbatim}
+\begin{Code}
   aggregate(x, by, FUN)
-\end{verbatim}
+\end{Code}
 Here, \code{x} is a data frame where each row represents an element of $U$. The
 parameter \code{by} is a list of vectors of group labels, where each vector has
 a length that equals the number of rows in \code{x}. So the function $f:U\onto
