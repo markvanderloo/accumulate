@@ -154,7 +154,7 @@ software. Methodology has for example been implemented in the \pkg{sae} package
 of \cite{molina2015sae} and the \pkg{hbsae} package of
 \cite{boonstra2022hbsae}.  Regarding imputation methodology, the CRAN task view
 on missing data\footnote{https://cran.r-project.org/web/views/MissingData.html}
-currently lists 203 \pkg{R} packages that support some form of estimating
+currently lists 203 \proglang{R} packages that support some form of estimating
 missing data.  The \pkg{simputation} package \citep{loo2022simputation} seems
 to be the only one that allows for some kind of fall-through scenario for
 selecting methods, but it does not allow for dynamic grouping.
@@ -164,7 +164,7 @@ for generic aggregation based on fixed groups. On the other hand there are
 domain-specific implementation for methods where dynamic grouping of a set of
 records plays a role. This paper presents a generic solution to
 split-apply-combine aggregation where groups can be collapsed dynamically in
-the form of \pkg{R} package \pkg{accumulate} \citep{loo2022accumulate}.
+the form of \proglang{R} package \pkg{accumulate} \citep{loo2022accumulate}.
 
 The \code{accumulate} package serves the use case where a user wishes to
 compute aggregates for a certain grouping of records. However, if a certain

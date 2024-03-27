@@ -113,8 +113,10 @@ should not be capitalized.
 ==> DONE (NACE, ISIC and ESCO)
 
 o As a reminder, please make sure that:
-	- \proglang, \pkg and \code have been used for highlighting throughout the paper (including titles and references), except where explicitly escaped.
+  - \proglang, \pkg and \code have been used for highlighting throughout the
+    paper (including titles and references), except where explicitly escaped.
 
+==> DONE
 
 References:
 
