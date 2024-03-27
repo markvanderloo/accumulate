@@ -120,7 +120,7 @@ performance-focused \proglang{R} packages \pkg{collapse}
 \proglang{Python} the \code{pandas} package implements several methods for
 grouping records and aggregating over one or more columns in data frame
 objects. The more recent \citet{polars2023} library for \proglang{Python} and
-\proglang{Rust} also implements such features. Similarly, the \pkg{DataFrames}
+\proglang{Rust} also implement such features. Similarly, the \pkg{DataFrames}
 package for \proglang{julia} implements split-apply-combine functionality
 \citep{kaminski2022dataframes}.
 
@@ -174,7 +174,7 @@ wishes to compute the average profit to turnover ratio for each combination of
 economic activity and size class. If for a certain combination of economic
 activity and size class there are too few records for a reliable estimate, one
 could drop size class and compute the average ratio over all records within a
-certain economic activity. Or, one could choose to course-grain economic
+certain economic activity. Or, one could choose to coarse-grain economic
 activities by collapsing groups with activities that are deemed similar enough.
 
 The package has been developed with the following design choices in mind.
@@ -219,7 +219,7 @@ to be simple enough so the whole procedure can be followed in detail.
 We consider a data set with three categorical variables $A$, $B$ and $B_1$, and
 one numerical variable $Y$.  Variable $A$ has levels $\{1, 2,3\}$ and variable
 $B$ is a hierarchical classification with levels $\{11,12,13,21,22\}$. Variable
-$B_1$ is a course graining of $B$: for each record the value for $B_1$ is the
+$B_1$ is a coarse-graining of $B$: for each record the value for $B_1$ is the
 first digit of $B$. Hence, $B_1$ has levels $\{1,2\}$. 
 
 Our goal is to compute the mean $\mu_Y$ over $Y$, grouped by $A\times B$.  We
@@ -425,7 +425,7 @@ cumulate(input1, collapse = csh, test = min_records(3)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Specifying Tests}
 The \code{test} parameter of \code{cumulate()} and \code{accumulate()} accepts a
-function that takes a subset of the data and must returns a boolean. For common
+function that takes a subset of the data and returns a boolean. For common
 test conditions, including requiring a minimal number of records, or a minimal
 number or fraction of complete records there are helper functions available.
 %
