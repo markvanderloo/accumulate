@@ -66,7 +66,12 @@ o If using "e.g." and "i.e." add a comma after the period to keep LaTeX from int
 ==> DONE
 
 
-o The rule for capitalizing the starting letters of Figure, Section and Table is as follows: If you are referring to a particular figure/section/table then capitalize the first letter, otherwise use a lower-case first letter. For example, something shown in Section 4 vs. there are three sections in this paper. All of your figures and tables should be in the dedicated environment, with proper captions and labels 
+o The rule for capitalizing the starting letters of Figure, Section and Table
+is as follows: If you are referring to a particular figure/section/table then
+capitalize the first letter, otherwise use a lower-case first letter. For
+example, something shown in Section 4 vs. there are three sections in this
+paper. All of your figures and tables should be in the dedicated environment,
+with proper captions and labels 
 
 \begin{figure}
 Figure
@@ -74,6 +79,7 @@ Figure
 \label{}
 \end{figure}
 
+==> DONE. In particular, put the colorded tables in a figure environment and referred to the Figure.
 
 o Figures, tables and equations should be marked with a \label and referred to by \ref, e.g., Figure~\ref{...}.
 

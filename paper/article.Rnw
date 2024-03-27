@@ -8,7 +8,7 @@
 \usepackage{amsmath, amssymb}
 \usepackage[ruled, linesnumbered]{algorithm2e}
 \usepackage{tikz}
-
+\usepackage{float}
 % shortcut for surjection arrow, and surjection version of xrightarrow
 \newcommand{\onto}{\twoheadrightarrow}
 \newcommand\xonto[2][]{%
@@ -213,7 +213,7 @@ Section~\ref{sect:conclusion}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Dynamic Grouping} \label{sect:dynamicgrouping}
-In this section the illustrate the concept of dynamic grouping with a minimal
+In this Section the illustrate the concept of dynamic grouping with a minimal
 worked example. This example is not very realistic, but it is constructed
 to be simple enough so the whole procedure can be followed in detail. 
 
@@ -230,11 +230,12 @@ to compute the value for that group over records in $(a,b_1)$ where $b_1$ is
 obtained by taking the first digit of $b$. If we then still have less than
 three records, we take records of group $a$ to determine the value for $(a,b)$.
 
-The following tables illustrate the idea. The left table represents the data
-set to be aggregated by $A$ and $B$.  The table on the right represents the
-output. Colors indicate which data was used. 
+The tables in Figure~\ref{fig:example} illustrate the idea. The left table
+represents the data set to be aggregated by $A$ and $B$.  The table on the
+right represents the output. Colors indicate which data was used. 
 %
-\begin{center}
+\begin{figure}[H]
+\centering
 \begin{tabular}{cccl}
 \multicolumn{4}{l}{Input data}\\
 \hline
@@ -251,7 +252,7 @@ $A$ & $B$ & $B_1$ & $Y$\\
 \cellcolor{blue!25}  3 &                     12 &                1       & \cellcolor{blue!25}  9   \\
 \hline
 \end{tabular}\hspace{1cm}\begin{tabular}{ccl}
-\multicolumn{3}{l}{Output}\\
+\multicolumn{3}{l}{Output aggregates}\\
 \hline
 $A\times B$ & \code{level} & $\mu_Y$\\
 \hline
@@ -263,8 +264,10 @@ $A\times B$ & \code{level} & $\mu_Y$\\
 \rowcolor{blue!25}  3 12        & 2             & 8  \\
 \hline
 \end{tabular}
-\label{eq:example}
-\end{center}
+\label{fig:example}
+\caption{Input data (left) with grouping variables $A$, $B$ and $B_1$, and
+means of $Y$ per $A\times B$ after dynamic grouping (right).}
+\end{figure}
 %
 The First row in the output represents group $(A=1,B=11)$. The collapsing level
 is zero, which means that no collapsing was necessary. Indeed, in the data
@@ -637,7 +640,7 @@ csh_from_digits(nace, levels = 3)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Extensive Example: Economic Data} \label{sect:example}
-In this section we discuss three practical examples using a synthetic
+In this Section we discuss three practical examples using a synthetic
 dataset included with the package.
 <<>>=
 data("producers")
@@ -804,7 +807,7 @@ print method.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Formal Description and Algorithms} \label{sect:algorithm}
-In this section we give a formal description of the algorithm for aggregation
+In this Section we give a formal description of the algorithm for aggregation
 with dynamic grouping.  We start by giving an algorithm for ordinary
 split-apply-combine to demonstrate how the algorithm must be generalized to
 allow for a collapsing scheme.
