@@ -59,6 +59,8 @@ R> example_model <- lm(response ~ variable1 + variable2 + variable3,
 
 o Code should have enough spaces to facilitate reading.  Please include spaces before and after operators and after commas (unless spaces have syntactical meaning).
 
+==> DONE
+
 o If using "e.g." and "i.e." add a comma after the period to keep LaTeX from interpreting them as the end of a sentence, i.e.: "e.g., " and "i.e., "
 
 
