@@ -83,9 +83,19 @@ Figure
 
 o Figures, tables and equations should be marked with a \label and referred to by \ref, e.g., Figure~\ref{...}.
 
-o All captions should appear below the corresponding figure/table. The captions should be in sentence style and end with a period.  No additional formatting (such as \emph, f or \it) should be used for the caption.
+==> DONE
 
-o All table row/column headers should also be in sentence style. There should not be further footnote-style annotations in tables; these should all be placed in the caption.
+o All captions should appear below the corresponding figure/table. The captions
+should be in sentence style and end with a period.  No additional formatting
+(such as \emph, \bf or \it) should be used for the caption.
+
+==> DONE
+
+o All table row/column headers should also be in sentence style. There should
+not be further footnote-style annotations in tables; these should all be placed
+in the caption.
+
+==> DONE
 
 o Equations should be marked with a \label and referred to by either
 	Equation~\ref{...} (with capitalization, without parentheses)
@@ -93,9 +103,14 @@ o Equations should be marked with a \label and referred to by either
 	(\ref({...})
 with the former being preferred if the number of equation references is not too large.
 
+==> DONE (I only number equations actually referred to, the others are used in running text)
 
-o Abbreviations should be spelled in upper-case letters without additional formatting (i.e., without periods, without small caps, italics, etc.).  All abbreviations should be introduced with their expansion where the expansion should not be capitalized.
+o Abbreviations should be spelled in upper-case letters without additional
+formatting (i.e., without periods, without small caps, italics, etc.).  All
+abbreviations should be introduced with their expansion where the expansion
+should not be capitalized.
 
+==> DONE (NACE, ISIC and ESCO)
 
 o As a reminder, please make sure that:
 	- \proglang, \pkg and \code have been used for highlighting throughout the paper (including titles and references), except where explicitly escaped.

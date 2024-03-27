@@ -237,7 +237,7 @@ right represents the output. Colors indicate which data was used.
 \begin{figure}[H]
 \centering
 \begin{tabular}{cccl}
-\multicolumn{4}{l}{Input data}\\
+\multicolumn{4}{l}{Input Data}\\
 \hline
 $A$ & $B$ & $B_1$ & $Y$\\
 \hline
@@ -252,9 +252,9 @@ $A$ & $B$ & $B_1$ & $Y$\\
 \cellcolor{blue!25}  3 &                     12 &                1       & \cellcolor{blue!25}  9   \\
 \hline
 \end{tabular}\hspace{1cm}\begin{tabular}{ccl}
-\multicolumn{3}{l}{Output aggregates}\\
+\multicolumn{3}{l}{Output Aggregates}\\
 \hline
-$A\times B$ & \code{level} & $\mu_Y$\\
+$A\times B$ & \code{Level} & $\mu_Y$\\
 \hline
 \rowcolor{red!25}   1 11        & 0             & 2  \\
 \rowcolor{green!25} 2 12        & 1             & 5  \\
@@ -520,10 +520,10 @@ certain edge cases.
 \subsection{Balanced and Unbalanced Hierarchical Classifications}
 Hierarchical classifications are abundant in (official) statistics.
 They represent a classification of entities into non-overlapping, nested
-groupings. Examples include the International Standard Industrial Classification
-of Economic Activities (ISIC, \citet{un2022isic}), the related 
-Statistical Classification of Economic Activities in Europe (NACE, \citet{eu2006nace})
-and the Euroean Skills, Competences, Qualifications and Occupations classification
+groupings. Examples include the international standard industrial classification
+of economic activities (ISIC, \citet{un2022isic}), the related 
+statistical classification of economic activities in europe (NACE, \citet{eu2006nace})
+and the Euroean skills, competences, qualifications and occupations classification
 (ESCO, \citet{eu2022esco}).
 
 Hierarchical classifications offer a natural mechanism for collapsing
