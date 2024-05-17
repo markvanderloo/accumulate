@@ -17,4 +17,4 @@ VignetteBuilder: simplermarkdown
 Depends: R (>= 3.5.0)
 Suggests: tinytest, simplermarkdown, validate
 Encoding: UTF-8
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.1
