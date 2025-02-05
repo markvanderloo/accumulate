@@ -35,6 +35,7 @@ revdep: pkg
 
 vignette: 
 	mkdir -p out
+	rm -rf out/*
 	cp pkg/vignettes/* ./out
 	cd out; R -e "simplermarkdown::mdweave_to_html('introduction.md')"
 	

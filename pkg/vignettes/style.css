@@ -5,14 +5,18 @@ body {
   margin-left: auto;
   margin-right: auto;
   font-family: system-ui;
-  color: lightgray;
-  background: #555555;
+  color: black;
+/*  background: #555555;*/
+}
+figure {
+  margin: 0;
+  padding: 0;
 }
 p, li {
   text-align: justify;
 }
 pre {
-  background: #444;
+  background: #F8F9F9;
   padding: 0.5rem;
 }
 h1, h2, h3, h4, h5 {
@@ -31,16 +35,6 @@ a {
 a:hover {
   color: lightblue;
 }
-pre code {
-  color: white;
-  background: inherit;
-  padding: 0;
-}
-code {
-  color: #e5c892;
-  background: #444;
-  padding: 0.2rem;
-}
 
 /* Specific styling */
 p.author {
@@ -48,22 +42,3 @@ p.author {
   color: orange;
 }
 
-/* Code */
-code {
-  color : lightgray;
-}
-code span.op {
-  color: #cccccc;
-}
-code span.kw, code span.cf {
-  color: #30bd58;
-}
-code span.st {
-  color: #76a9db; 
-}
-code span.dv, code span.ot, code span.fl{
-  color: #7fd0a8; 
-}
-code span.dt, code span.er {
-  color: #ee8c70; 
-}
