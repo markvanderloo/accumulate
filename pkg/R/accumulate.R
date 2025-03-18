@@ -70,7 +70,10 @@
 #' amount of collapsing yields a data set that is satisfactory according to
 #' \code{test}, then for that row, the \code{level} and subsequent columns are
 #' \code{NA}.
-#' 
+#'
+#' @references
+#' MPJ van der Loo (2025) \emph{Split-Apply-Combine with Dynamic Grouping}
+#' Journal of Statistical Software \code{doi:10.18637/jss.v112.i04}. 
 #' 
 #' @examples
 #'

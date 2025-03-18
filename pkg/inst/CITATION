@@ -1,0 +1,14 @@
+bibentry(bibtype = "Article",
+  title        = "Split-Apply-Combine with Dynamic Grouping",
+  author       = person(given = c("Mark", "P.", "J."),
+                        family = "van der Loo",
+                        email = "mpj.vanderloo@cbs.nl"),
+  journal      = "Journal of Statistical Software",
+  year         = "2025",
+  volume       = "112",
+  number       = "4",
+  pages        = "1--21",
+  doi          = "10.18637/jss.v112.i04",
+  header       = "To cite accumulate in publications use:"
+)
+

@@ -1,5 +1,6 @@
 version 1.0.0
 - updated style file for markdown vignette
+- added citation for JSS article doi:10.18637/jss.v112.i04
 
 version 0.9.3
 - Fixed example for 'from_validator' in documentation.

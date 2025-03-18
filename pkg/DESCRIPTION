@@ -1,7 +1,7 @@
 Package: accumulate
 Type: Package
 Title: Split-Apply-Combine with Dynamic Groups
-Version: 0.9.3
+Version: 1.0.0
 Authors@R: c( person("Mark", "van der Loo", role=c("aut","cre")
              , email="mark.vanderloo@gmail.com"
              , comment= c(ORCID="0000-0002-9807-4686")))
@@ -9,7 +9,8 @@ Maintainer: Mark van der Loo <mark.vanderloo@gmail.com>
 Description: Estimate group aggregates, where one can set user-defined conditions
    that each group of records must satisfy to be suitable for aggregation. If
    a group of records is not suitable, it is expanded using a collapsing scheme
-   defined by the user. 
+   defined by the user. A paper on this package was published in the Journal
+   of Statistical Software <doi:10.18637/jss.v112.i04>.
 License: EUPL
 URL: https://github.com/markvanderloo/accumulate
 LazyData: TRUE
@@ -17,4 +18,4 @@ VignetteBuilder: simplermarkdown
 Depends: R (>= 3.5.0)
 Suggests: tinytest, simplermarkdown, validate
 Encoding: UTF-8
-RoxygenNote: 7.3.1
+RoxygenNote: 7.3.2
