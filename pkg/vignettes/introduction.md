@@ -180,7 +180,7 @@ head(csh)
 ```
 Here, the column `sbi` denotes the original (maximally) 5-digit codes,
 `A1` the 4-digit codes, and so on. It is important that the name of
-the first column matches a column in the data to be agregated.
+the first column matches a column in the data to be aggregated.
 Both `cumlate` and `accumulate` accept such a data frame as an argument.
 Here is an example with `cumulate`.
 
